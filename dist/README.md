@@ -1,11 +1,13 @@
 TSL-Grafana Datasource Plugin
 ===
 
+This repository contains the [TSL](https://github.com/ovh/tsl) grafana datasource.
+
 # Install the plugin
 
 Just clone the repository in the Grafana *plugins* folder
 ```sh
-git clone grafana-tsl.git /var/lib/grafana/plugins/grafana-tsl
+git clone https://github.com/ovh/ovh-tsl-datasource.git /var/lib/grafana/plugins/tsl
 ```
 Grafana will use the *dist/* folder by default
 
@@ -19,8 +21,8 @@ Grafana will use the *dist/* folder by default
 
 ## Add execution variables
 
-You can define variables at datasource level (~ organisation level) which can be available for all dashboards. you can put tokens, constants, macros, ...
-You can simply re-use variable using your the name set in the queries.
+You can define variables at datasource level (~ organisation level) which can be available for all dashboards.
+You can simply re-use variable using your their name inside a query.
 
 # Make a query
 
@@ -84,3 +86,7 @@ To contribute and re-compile you plugin you can simply execute
 ```sh
 npm run build
 ```
+
+# LICENSE
+
+This plugin was published under the [MIT License](./LICENSE.md)
