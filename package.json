@@ -1,0 +1,32 @@
+{
+  "name": "grafana-tsl",
+  "version": "0.0.1",
+  "description": "TSL datasource Grafana plugin",
+  "main": "module.ts",
+  "repository": "git@github.com:ovh/grafana-tsl.git",
+  "author": "ovh <contact@metrics.ovh.net>",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=7.9.0"
+  },
+  "scripts": {
+    "docker": "docker build -t grafana . && docker run -i -p 3000:3000 grafana",
+    "build": "./node_modules/.bin/gulp build",
+    "start": "./node_modules/.bin/gulp"
+  },
+  "dependencies": {
+    "moment": "^2.22.1"
+  },
+  "devDependencies": {
+    "del": "^3.0.0",
+    "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
+    "gulp": "^3.9.1",
+    "gulp-less": "^4.0.0",
+    "gulp-livereload": "^3.8.1",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-plumber-notifier": "0.0.3",
+    "gulp-pug": "^4.0.1",
+    "gulp-typescript": "^4.0.2",
+    "typescript": "^2.8.3"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "grafana-tsl-datasource",
+  "type": "datasource",
+  "name": "TSL",
+  "metrics": true,
+  "annotations": true,
+  "info": {
+    "description": "TSL platform datasource plugin",
+    "version": "0.0.1",
+    "updated": "2018-04-25",
+    "author": {
+      "name": "ovh",
+      "url": "https://github.com/ovh/grafana-tsl"
+    },
+    "keywords": [
+      "tsl",
+      "datasource",
+      "timeseries"
+    ],
+    "logos": {
+      "small": "assets/tsl-center.png",
+      "large": "assets/tsl-large.png"
+    },
+    "links": [{
+      "name": "GitHub",
+      "url": "https://github.com/ovh/grafana-tsl"
+    }]
+  },
+  "dependencies": {
+    "grafanaVersion": "5.0.4",
+    "plugins": []
+  }
+}

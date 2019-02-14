@@ -1,0 +1,31 @@
+.full-height {
+  height: 100%;
+}
+span.spaced-row {
+  margin: 0 1vw;
+}
+.tsl-query {
+  margin-bottom: 1vh;
+}
+.tsl-query h5 {
+  margin-top: 4vh;
+}
+.tsl-query h6 {
+  margin-top: 3vh;
+}
+.tsl-query .gf-form-inline ace-editor {
+  width: 100%;
+}
+.tsl-query .gf-form-inline ace-editor textarea {
+  width: 100%;
+  min-height: 50vh;
+  outline: none;
+}
+.flex-self-start {
+  align-self: flex-start;
+}
+.tsl-query .gf-form-inline ace-editor textarea {
+  background-color: #272822;
+  color: white;
+  border-color: #000000;
+}

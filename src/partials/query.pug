@@ -1,0 +1,278 @@
+query-editor-row.tsl-query(query-ctrl='ctrl' has-text-edit-mode='true')
+
+  .gf-form-inline
+    gf-form-switch.gf-form(label='Hide labels' checked='ctrl.target.hideLabels' on-change='ctrl.refresh()')
+    gf-form-switch.gf-form(label='Hide attributes' checked='ctrl.target.hideAttributes' on-change='ctrl.refresh()')
+    gf-form-switch.gf-form.pull-right(label='TSL editor' checked='ctrl.target.advancedMode')
+
+  .gf-form-inline(ng-show='ctrl.target.advancedMode')
+    code-editor(content="ctrl.target.expr"
+                datasource="ctrl.datasource"
+                on-change="ctrl.onChangeInternal()"
+                get-completer="ctrl.getCompleter()"
+                data-mode="tsl"
+                data-show-gutter="true"
+                data-behaviours-enabled="true"
+                data-snippets-enabled="true"
+                data-max-lines="200"
+                code-editor-focus="ctrl.isLastQuery")
+
+  .gf-form-block(ng-show='!ctrl.target.advancedMode')
+    h5 TSL Query
+    .gf-form-label(readonly) {{ ctrl.target.friendlyQuery.tslScript }}
+    h5 Metric
+    .gf-form-inline
+      .gf-form.flex-self-start
+        label.gf-form-label.width-10 Name:
+        input.gf-form-input.width-10(ng-model='ctrl.target.friendlyQuery.className')
+    
+    h5 Filters
+    .gf-form
+        label.gf-form-label.width-6 Labels:
+        .gf-form-block
+          .gf-form(ng-repeat='(index, label) in ctrl.target.friendlyQuery.labels')
+            input.gf-form-input.width-10(ng-model='label.key')
+            select(ng-model='label.comparator').width-4
+              option(value='' selected) =
+              option(ng-repeat='labelComparator in ctrl.target.friendlyQuery.comparators' ng-value="'{{ labelComparator }}'") {{ labelComparator }}
+            input.gf-form-input.width-10(ng-model='label.value')
+            button.btn.btn-danger.full-height(ng-click='ctrl._delLabel($index)')
+              i.fa.fa-trash(aria-hidden='true')
+          .gf-form
+            input.gf-form-input.width-10(placeholder='key' ng-model='ctrl.extraLabelKey')
+            label.gf-form-label.width-10.query-keyword Comparator:
+            select(ng-model='ctrl.extraComparator').width-4
+              option(value='' selected) =
+              option(ng-repeat='extraComparator in ctrl.target.friendlyQuery.comparators' ng-value="'{{ extraComparator }}'") {{ extraComparator }}
+            input.gf-form-input.width-10(placeholder='value' ng-model='ctrl.extraLabelValue')
+            button.btn.btn-success.full-height(ng-click='ctrl._addLabel()')
+              i.fa.fa-plus(aria-hidden='true')
+
+    h5 Sample
+    .gf-form
+      label.gf-form-label Span:
+      input.gf-form-input.width-7(type='duration' ng-model='ctrl.target.friendlyQuery.span')
+      label.gf-form-label.width-10.query-keyword Aggregator:
+      select(ng-model='ctrl.target.friendlyQuery.sampleAggregator').width-10
+        option(value='' selected) None
+        option(ng-repeat='sampleAggregator in ctrl.target.friendlyQuery.sampleAggregators' ng-value="'{{ sampleAggregator }}'") {{ sampleAggregator }}
+      label.gf-form-label(ng-if='["percentile"].includes(ctrl.target.friendlyQuery.sampleAggregator)') Percentile:
+      input.gf-form-input.width-7(ng-if='["percentile"].includes(ctrl.target.friendlyQuery.sampleAggregator)' type='number' ng-model='ctrl.target.friendlyQuery.sampleByPercentile' min='0' max='100')
+      label.gf-form-label(ng-if='["join"].includes(ctrl.target.friendlyQuery.sampleAggregator)') Separator:
+      input.gf-form-input.width-7(ng-if='["join"].includes(ctrl.target.friendlyQuery.sampleAggregator)' type='string' ng-model='ctrl.target.friendlyQuery.sampleByJoin')
+      label.gf-form-label Fill policy:
+      select(ng-model='ctrl.target.friendlyQuery.sampleFill').width-10
+        option(value='') auto
+        option(ng-repeat='sampleFill in ctrl.target.friendlyQuery.sampleByFillPolicy' ng-value="'{{ sampleFill }}'") {{ sampleFill }}
+      label.gf-form-label(ng-if='["fill"].includes(ctrl.target.friendlyQuery.sampleFill)') Fill value:
+      input.gf-form-input.width-7(ng-if='["fill"].includes(ctrl.target.friendlyQuery.sampleFill)' type='string' ng-model='ctrl.target.friendlyQuery.sampleFillValue')
+      gf-form-switch.gf-form(label='Relative:' checked='ctrl.target.friendlyQuery.sampleByRelative' on-change='ctrl.refresh()')
+
+    h5 GroupBy
+    .gf-form-inline
+      .gf-form(ng-repeat='label in ctrl.target.friendlyQuery.groupByLabels')
+        label.gf-form-label {{ label }}
+        button.btn.btn-danger.btn-small.full-height(ng-click='ctrl._delGroupByLabel(label)')
+          i.fa.fa-trash(aria-hidden='true')
+    .gf-form-inline
+      .gf-form
+          label.gf-form-label Labels keys:
+          input.gf-form-input.width-10(placeholder='label' ng-model='ctrl.extraGroupByLabel')
+          button.btn.btn-success.full-height(ng-click='ctrl._addGroupByLabel()')
+            i.fa.fa-plus(aria-hidden='true') 
+      .gf-form
+        label.gf-form-label.width-10.query-keyword Aggregator:
+        select(ng-model='ctrl.target.friendlyQuery.groupByAggregator').width-10
+          option(value='' selected) None
+          option(ng-repeat='groupByAggregator in ctrl.target.friendlyQuery.groupByAggregators' ng-value="'{{ groupByAggregator }}'") {{ groupByAggregator }}
+        
+        label.gf-form-label(ng-if='["percentile"].includes(ctrl.target.friendlyQuery.groupByAggregator)') Percentile:
+        input.gf-form-input.width-7(ng-if='["percentile"].includes(ctrl.target.friendlyQuery.groupByAggregator)' type='number' ng-model='ctrl.target.friendlyQuery.groupByPercentile' min='0' max='100')
+        label.gf-form-label(ng-if='["join"].includes(ctrl.target.friendlyQuery.groupByAggregator)') Separator:
+        input.gf-form-input.width-7(ng-if='["join"].includes(ctrl.target.friendlyQuery.groupByAggregator)' type='string' ng-model='ctrl.target.friendlyQuery.groupByJoin')  
+    
+      gf-form-switch.gf-form(label='Without:' checked='ctrl.target.friendlyQuery.groupByWithout' on-change='ctrl.refresh()')
+
+    h5 Operators
+      
+      h6 Add a new operator
+      .gf-form
+        label.gf-form-label Kind: 
+        select(ng-model='ctrl.extraOperatorKind').width-10
+          option(value='') None
+          option(ng-repeat='extraOperatorKind in ctrl.target.friendlyQuery.operatorsKind track by $index' ng-value="'{{ extraOperatorKind }}'") {{ extraOperatorKind }}
+
+      .gf-form(ng-if='["Arithmetic"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraArithmeticOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraArithmeticOperator in ctrl.target.friendlyQuery.arithmeticOperators' ng-value="'{{ extraArithmeticOperator }}'") {{ extraArithmeticOperator }}
+        input.gf-form-input.width-10(ng-if='["mul", "add", "sub", "div", "logN"].includes(ctrl.extraArithmeticOperator)' type='number' placeholder='param' ng-model='ctrl.extraArithmeticParam')
+        button.btn.btn-success.full-height(ng-click='ctrl._addArithmeticOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Equality"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraEqualityOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraEqualityOperator in ctrl.target.friendlyQuery.equalityOperators' ng-value="'{{ extraEqualityOperator }}'") {{ extraEqualityOperator }}
+        input.gf-form-input.width-10(type='number' placeholder='param' ng-model='ctrl.extraEqualityParam')
+        button.btn.btn-success.full-height(ng-click='ctrl._addEqualityOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Limit"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraLimitOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraLimitOperator in ctrl.target.friendlyQuery.limitOperators' ng-value="'{{ extraLimitOperator }}'") {{ extraLimitOperator }}
+        input.gf-form-input.width-10(type='number' placeholder='param' ng-model='ctrl.extraLimitParam')
+        button.btn.btn-success.full-height(ng-click='ctrl._addLimitOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Time"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraTimeOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraTimeOperator in ctrl.target.friendlyQuery.timeOperators' ng-value="'{{ extraTimeOperator }}'") {{ extraTimeOperator }}
+        input.gf-form-input.width-10(ng-if='["shift"].includes(ctrl.extraTimeOperator)' type='string' placeholder='param' ng-model='ctrl.extraTimeParamDuration')
+        input.gf-form-input.width-10(ng-if='["keepLastValues", "keepFirstValues", "shrink", "timescale", "timemodulo"].includes(ctrl.extraTimeOperator)' type='number' placeholder='param' ng-model='ctrl.extraTimeParamNumber')
+        input.gf-form-input.width-10(ng-if='["timemodulo"].includes(ctrl.extraTimeOperator)' type='string' placeholder='label key' ng-model='ctrl.extraTimeParamDuration')
+        input.gf-form-input.width-10(ng-if='["timeclip"].includes(ctrl.extraTimeOperator)' type='string' placeholder='end' ng-model='ctrl.extraTimeParamEnd')
+        input.gf-form-input.width-10(ng-if='["timeclip"].includes(ctrl.extraTimeOperator)' type='string' placeholder='duration (or start)' ng-model='ctrl.extraTimeParamDuration')
+        input.gf-form-input.width-10(ng-if='["timesplit"].includes(ctrl.extraTimeOperator)' type='string' placeholder='duration' ng-model='ctrl.extraTimeParamEnd')
+        input.gf-form-input.width-10(ng-if='["timesplit"].includes(ctrl.extraTimeOperator)' type='string' placeholder='number of points' ng-model='ctrl.extraTimeParamNumber')
+        input.gf-form-input.width-10(ng-if='["timesplit"].includes(ctrl.extraTimeOperator)' type='string' placeholder='label key' ng-model='ctrl.extraTimeParamDuration')
+        button.btn.btn-success.full-height(ng-click='ctrl._addTimeOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Window"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraWindowOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraWindowOperator in ctrl.target.friendlyQuery.windowOperators' ng-value="'{{ extraWindowOperator }}'") {{ extraWindowOperator }}
+        select(ng-model='ctrl.extraWindowAggregator').width-10
+          option(value='') None
+          option(ng-repeat='extraWindowAggregator in ctrl.target.friendlyQuery.windowAggregators' ng-value="'{{ extraWindowAggregator }}'") {{ extraWindowAggregator }}
+        label.gf-form-label(ng-if='["percentile"].includes(ctrl.extraWindowAggregator)') Percentile:
+        input.gf-form-input.width-7(ng-if='["percentile"].includes(ctrl.extraWindowAggregator)' type='number' ng-model='ctrl.extraWindowParamPercentile' min='0' max='100')
+        label.gf-form-label(ng-if='["join"].includes(ctrl.extraWindowAggregator)') Separator:
+        input.gf-form-input.width-7(ng-if='["join"].includes(ctrl.extraWindowAggregator)' type='string' ng-model='ctrl.extraWindowParamJoin')
+        input.gf-form-input.width-10(ng-if='["window"].includes(ctrl.extraWindowOperator)' type='string' placeholder='(optional) pre' ng-model='ctrl.extraWindowPre')
+        input.gf-form-input.width-10(ng-if='["window"].includes(ctrl.extraWindowOperator)' type='string' placeholder='(optional) post' ng-model='ctrl.extraWindowPost')
+        button.btn.btn-success.full-height(ng-click='ctrl._addWindowOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+
+      .gf-form(ng-if='["Transform"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraTransformOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraTransformOperator in ctrl.target.friendlyQuery.transformOperators' ng-value="'{{ extraTransformOperator }}'") {{ extraTransformOperator }}
+        input.gf-form-input.width-10(ng-if='["quantize"].includes(ctrl.extraTransformOperator)' type='string' placeholder='label' ng-model='ctrl.extraTransformQuantizeLabel')
+        input.gf-form-input.width-10(ng-if='["quantize"].includes(ctrl.extraTransformOperator)' type='string' placeholder='step' ng-model='ctrl.extraTransformQuantizeStep')
+        input.gf-form-input.width-10(ng-if='["quantize"].includes(ctrl.extraTransformOperator)' type='string' placeholder='(optional) chunk duration' ng-model='ctrl.extraTransformQuantizeChunk')
+        input.gf-form-input.width-10(ng-if='["rate"].includes(ctrl.extraTransformOperator)' type='string' placeholder='(optional) rate duration' ng-model='ctrl.extraTransformParam')
+        button.btn.btn-success.full-height(ng-click='ctrl._addTransformOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Sorts"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraSortsOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraSortsOperator in ctrl.target.friendlyQuery.orderOperators' ng-value="'{{ extraSortsOperator }}'") {{ extraSortsOperator }}
+        input.gf-form-input.width-10(ng-if='["topN", "bottomN", "topNBy", "bottomNBy"].includes(ctrl.extraSortsOperator)' type='number' placeholder='param' ng-model='ctrl.extraSortsParamNumber')
+        select(ng-model='ctrl.extraSortsParamAggregator' ng-if='["sortBy", "sortDescBy", "topNBy", "bottomNBy"].includes(ctrl.extraSortsOperator)').width-10
+          option(value='') None
+          option(ng-repeat='extraSortsParamAggregator in ctrl.target.friendlyQuery.sortsAggregators' ng-value="'{{ extraSortsParamAggregator }}'") {{ extraSortsParamAggregator }}
+        label.gf-form-label(ng-if='["percentile"].includes(ctrl.extraSortsParamAggregator)') Percentile:
+        input.gf-form-input.width-7(ng-if='["percentile"].includes(ctrl.extraSortsParamAggregator)' type='number' ng-model='ctrl.extraSortsParamPercentile' min='0' max='100')
+        button.btn.btn-success.full-height(ng-click='ctrl._addSortsOperator()')
+          i.fa.fa-plus(aria-hidden='true')
+      
+      .gf-form(ng-if='["Meta"].includes(ctrl.extraOperatorKind)')
+        label.gf-form-label Operator:
+        select(ng-model='ctrl.extraMetaOperator').width-10
+          option(value='') None
+          option(ng-repeat='extraMetaOperator in ctrl.target.friendlyQuery.metaOperators' ng-value="'{{ extraMetaOperator }}'") {{ extraMetaOperator }}
+        input.gf-form-input.width-10(ng-if='["addNamePrefix"].includes(ctrl.extraMetaOperator)' type='string' placeholder='prefix' ng-model='ctrl.extraMetaParam')
+        input.gf-form-input.width-10(ng-if='["addNameSuffix"].includes(ctrl.extraMetaOperator)' type='string' placeholder='suffix' ng-model='ctrl.extraMetaParam')
+        input.gf-form-input.width-10(ng-if='["rename"].includes(ctrl.extraMetaOperator)' type='string' placeholder='newname' ng-model='ctrl.extraMetaParam')
+        .gf-form(ng-if='["filterByName"].includes(ctrl.extraMetaOperator)')
+          label.gf-form-label.width-10.query-keyword Comparator:
+          select(ng-model='ctrl.extraMetaParamComparator').width-4
+            option(value='' selected) =
+            option(ng-repeat='extraMetaParamComparator in ctrl.target.friendlyQuery.filterByNameComparators' ng-value="'{{ extraMetaParamComparator }}'") {{ extraMetaParamComparator }}
+        input.gf-form-input.width-10(ng-if='["filterByName"].includes(ctrl.extraMetaOperator)' type='string' placeholder='classname' ng-model='ctrl.extraMetaParam')
+        .gf-form(ng-if='["filterByLastValue"].includes(ctrl.extraMetaOperator)')
+          label.gf-form-label.width-10.query-keyword Comparator:
+          select(ng-model='ctrl.extraMetaParamComparator').width-4
+            option(value='' selected) =
+            option(ng-repeat='extraMetaParamComparator in ctrl.target.friendlyQuery.filterByLastValuesComparators' ng-value="'{{ extraMetaParamComparator }}'") {{ extraMetaParamComparator }}
+        input.gf-form-input.width-10(ng-if='["filterByLastValue"].includes(ctrl.extraMetaOperator)' type='string' placeholder='lastValue' ng-model='ctrl.extraMetaParam')
+      
+        .gf-form(ng-if='["filterByLabels"].includes(ctrl.extraMetaOperator)')
+            input.gf-form-input.width-10(placeholder='key' ng-model='ctrl.extraMetaLabelKey')
+            label.gf-form-label.width-10.query-keyword Comparator:
+            select(ng-model='ctrl.extraMetaLabelComparator').width-4
+              option(value='' selected) =
+              option(ng-repeat='extraMetaLabelComparator in ctrl.target.friendlyQuery.comparators' ng-value="'{{ extraMetaLabelComparator }}'") {{ extraMetaLabelComparator }}
+            input.gf-form-input.width-10(placeholder='value' ng-model='ctrl.extraMetaLabelValue')
+            button.btn.btn-success.full-height(ng-click='ctrl._addMetaLabel()')
+              i.fa.fa-plus(aria-hidden='true')
+
+        
+        input.gf-form-input.width-10(ng-if='["renameBy"].includes(ctrl.extraMetaOperator)' type='string' placeholder='label key' ng-model='ctrl.extraMetaParam')
+        input.gf-form-input.width-10(ng-if='["renameLabelKey"].includes(ctrl.extraMetaOperator)' type='string' placeholder='label key' ng-model='ctrl.extraMetaParam')
+        input.gf-form-input.width-10(ng-if='["renameLabelKey"].includes(ctrl.extraMetaOperator)' type='string' placeholder='new label key' ng-model='ctrl.extraMetaParamNewValue')
+        input.gf-form-input.width-10(ng-if='["renameLabelValue"].includes(ctrl.extraMetaOperator)' type='string' placeholder='label key' ng-model='ctrl.extraMetaParam')
+        input.gf-form-input.width-10(ng-if='["renameLabelValue"].includes(ctrl.extraMetaOperator)' type='string' placeholder='(optional) regexp value' ng-model='ctrl.extraMetaParamRegexpValue')
+        input.gf-form-input.width-10(ng-if='["renameLabelValue"].includes(ctrl.extraMetaOperator)' type='string' placeholder='new value' ng-model='ctrl.extraMetaParamNewValue')
+        .gf-form(ng-if='!["removeLabels", "filterByLabels"].includes(ctrl.extraMetaOperator)')
+          .gf-form-block
+            button.btn.btn-success.full-height(ng-click='ctrl._addMetaOperator()')
+              i.fa.fa-plus(aria-hidden='true')
+      .gf-form(ng-if='["filterByLabels"].includes(ctrl.extraMetaOperator) && ctrl.extraMetalabels.length >= 1') 
+          label.gf-form-label Labels filters:
+      .gf-form(ng-if='["filterByLabels"].includes(ctrl.extraMetaOperator)' ng-repeat='(index, label) in ctrl.extraMetalabels')
+          input.gf-form-input.width-10(ng-model='label.key')
+          select(ng-model='label.comparator').width-4
+            option(value='' selected) =
+            option(ng-repeat='labelComparator in ctrl.target.friendlyQuery.comparators' ng-value="'{{ labelComparator }}'") {{ labelComparator }}
+          input.gf-form-input.width-10(ng-model='label.value')
+          button.btn.btn-danger.full-height(ng-click='ctrl._delMetaLabel($index)')
+            i.fa.fa-trash(aria-hidden='true')
+      .gf-form(ng-if='["filterByLabels"].includes(ctrl.extraMetaOperator)')
+          label.gf-form-label Add filterByLabels operator:
+          .gf-form-block
+            button.btn.btn-success.full-height(ng-click='ctrl._addFilterByLabelsOperator()')
+              i.fa.fa-plus(aria-hidden='true')
+      .gf-form(ng-if='["removeLabels"].includes(ctrl.extraMetaOperator)')
+        label.gf-form-label Enter a label key:
+        input.gf-form-input.width-10(placeholder='label key' ng-model='ctrl.extraRemoveLabelsLabel')
+        button.btn.btn-success.full-height(ng-click='ctrl._addRemoveLabelsLabel()')
+          i.fa.fa-plus(aria-hidden='true') 
+
+      .gf-form(ng-if='["removeLabels"].includes(ctrl.extraMetaOperator)')
+        .gf-form(ng-if='ctrl.extraMetaParamRemoveLabels.length >= 1') 
+          label.gf-form-label Keys to remove:
+          .gf-form(ng-repeat='label in ctrl.extraMetaParamRemoveLabels track by $index')
+            label.gf-form-label {{ label }}
+            button.btn.btn-danger.btn-small.full-height(ng-click='ctrl._delRemoveLabelsLabel(label)')
+              i.fa.fa-trash(aria-hidden='true')
+      .gf-form(ng-if='["removeLabels"].includes(ctrl.extraMetaOperator)')
+        label.gf-form-label Add removeLabels operator:
+        .gf-form-block
+          button.btn.btn-success.full-height(ng-click='ctrl._addMetaOperator()')
+            i.fa.fa-plus(aria-hidden='true')
+
+      .gf-form(ng-if='ctrl.target.friendlyQuery.queryOperators.length >= 1')
+        h6 Current query operators:
+      .gf-form
+        .gf-form-block
+          .gf-form(ng-repeat='operator in ctrl.target.friendlyQuery.queryOperators track by $index')
+            label.gf-form-label {{ operator }}
+            button.btn.btn-primary.btn-small.full-height(ng-click='ctrl._mvOperatorUp($index)')
+              i.fa.fa-arrow-up(aria-hidden='true')
+            button.btn.btn-secondary.btn-small.full-height(ng-click='ctrl._mvOperatorDown($index)')
+              i.fa.fa-arrow-down(aria-hidden='true')
+            button.btn.btn-danger.btn-small.full-height(ng-click='ctrl._delOperator($index)')
+              i.fa.fa-trash(aria-hidden='true')
