@@ -99,12 +99,13 @@ export default class TslQuery {
     { name: 'last.le',  type: 'N' }
   ]
 
-  constructor() {}
-
-  addLabel(key: string, comparator: string, val: string) {
+  constructor() {
     if (!this.labels) {
       this.labels = []
     }
+  }
+
+  addLabel(key: string, comparator: string, val: string) {
     this.labels.push(new Labels(key, comparator, val))
   }
 
