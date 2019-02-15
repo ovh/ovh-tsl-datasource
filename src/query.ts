@@ -102,6 +102,9 @@ export default class TslQuery {
   constructor() {}
 
   addLabel(key: string, comparator: string, val: string) {
+    if (!this.labels) {
+      this.labels = []
+    }
     this.labels.push(new Labels(key, comparator, val))
   }
 
