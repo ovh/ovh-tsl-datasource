@@ -30,7 +30,7 @@ query-editor-row.tsl-query(query-ctrl='ctrl' has-text-edit-mode='true')
     .gf-form
         label.gf-form-label.width-6 Labels:
         .gf-form-block
-          .gf-form(ng-repeat='(index, label) in ctrl.target.friendlyQuery.labels')
+          .gf-form(ng-repeat='(index, label) in ctrl.target.friendlyQuery._labels')
             input.gf-form-input.width-10(ng-model='label.key')
             select(ng-model='label.comparator').width-4
               option(value='' selected) =

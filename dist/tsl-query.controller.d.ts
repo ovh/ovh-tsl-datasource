@@ -1,7 +1,6 @@
-/// <reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
 import { QueryCtrl } from 'app/plugins/sdk';
 import Query from './query';
-import Labels from './labels';
+import SeriesLabels from './seriesLabels';
 export default class TslQueryCtrl extends QueryCtrl {
     $scope: any;
     private uiSegmentSrv;
@@ -53,7 +52,7 @@ export default class TslQueryCtrl extends QueryCtrl {
     extraMetaOperator: string;
     extraMetaParamComparator: string;
     extraRemoveLabelsLabel: string;
-    extraMetalabels: Labels[];
+    extraMetalabels: SeriesLabels[];
     extraMetaLabelKey: string;
     extraMetaLabelComparator: string;
     extraMetaLabelValue: string;

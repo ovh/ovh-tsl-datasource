@@ -1,11 +1,11 @@
 ///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
 System.register(["app/plugins/sdk", "./tsl-datasource", "./tsl-config.controller", "./tsl-query.controller", "./tsl-annotation.controller"], function (exports_1, context_1) {
     "use strict";
+    var sdk_1, tsl_datasource_1, tsl_config_controller_1, tsl_query_controller_1, tsl_annotation_controller_1;
     var __moduleName = context_1 && context_1.id;
     function getCSSPath(sheet) {
         return "plugins/grafana-tsl-datasource/style/" + sheet + ".css";
     }
-    var sdk_1, tsl_datasource_1, tsl_config_controller_1, tsl_query_controller_1, tsl_annotation_controller_1;
     return {
         setters: [
             function (sdk_1_1) {

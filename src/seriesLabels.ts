@@ -1,4 +1,4 @@
-export default class Labels {
+export default class SeriesLabels {
   key: string;
   comparator: string;
   value: string;

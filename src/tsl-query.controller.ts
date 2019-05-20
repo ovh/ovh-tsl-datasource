@@ -3,7 +3,7 @@
 import { QueryCtrl }   from 'app/plugins/sdk'
 import Query from './query'
 import initTslAceMode from './ace-mode-tsl'
-import Labels from './labels';
+import SeriesLabels from './seriesLabels';
 
 initTslAceMode()
 
@@ -58,7 +58,7 @@ export default class TslQueryCtrl extends QueryCtrl {
   extraMetaOperator: string
   extraMetaParamComparator: string
   extraRemoveLabelsLabel: string
-  extraMetalabels: Labels[] = []
+  extraMetalabels: SeriesLabels[] = []
   extraMetaLabelKey: string
   extraMetaLabelComparator: string
   extraMetaLabelValue: string
@@ -394,7 +394,7 @@ export default class TslQueryCtrl extends QueryCtrl {
   }
 
   _addMetaLabel() {
-    let label = new Labels(this.extraMetaLabelKey, this.extraMetaLabelComparator, this.extraMetaLabelValue)
+    let label = new SeriesLabels(this.extraMetaLabelKey, this.extraMetaLabelComparator, this.extraMetaLabelValue)
     this.extraMetalabels.push(label)
 
     this.extraMetaLabelKey = ''

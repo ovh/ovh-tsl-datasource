@@ -1,11 +1,11 @@
 
-import Labels from './labels'
+import SeriesLabels from './seriesLabels'
 
 export default class TslQuery {
 
   readToken = ''
   className = ''
-  labels: Labels[] = []
+  _labels: SeriesLabels[] = []
   sampleAggregator = null
   span = '1m'
   sampleByPercentile = 50
@@ -100,18 +100,19 @@ export default class TslQuery {
   ]
 
   constructor() {
-    if (!this.labels) {
-      this.labels = []
+    if (!this._labels) {
+      this._labels = []
     }
   }
 
   addLabel(key: string, comparator: string, val: string) {
-    this.labels.push(new Labels(key, comparator, val))
+    let label = new SeriesLabels(key, comparator, val)
+    this._labels.push(label)
   }
 
   delLabel(index: number) {
     if (index != -1)
-      this.labels.splice(index, 1)
+      this._labels.splice(index, 1)
   }
 
   addGroupByLabel(key: string) {
@@ -140,7 +141,7 @@ export default class TslQuery {
     q = `select(${ f(this.className) })`
     
 
-    let labelsSize = Object.keys(this.labels).length
+    let labelsSize = Object.keys(this._labels).length
 
     if (labelsSize == 1) {
       q += `.where(${ this.loadTSLLabels() })`
@@ -225,7 +226,7 @@ export default class TslQuery {
     let labelsStr = ''
     let prefix = ''
 
-    this.labels.forEach( (label) => {
+    this._labels.forEach( (label) => {
 
       let comparator = label.comparator
       if (!label.comparator) {

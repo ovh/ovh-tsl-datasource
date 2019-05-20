@@ -1,11 +1,11 @@
-System.register(["./labels"], function (exports_1, context_1) {
+System.register(["./seriesLabels"], function (exports_1, context_1) {
     "use strict";
+    var seriesLabels_1, TslQuery;
     var __moduleName = context_1 && context_1.id;
-    var labels_1, TslQuery;
     return {
         setters: [
-            function (labels_1_1) {
-                labels_1 = labels_1_1;
+            function (seriesLabels_1_1) {
+                seriesLabels_1 = seriesLabels_1_1;
             }
         ],
         execute: function () {
@@ -13,7 +13,7 @@ System.register(["./labels"], function (exports_1, context_1) {
                 function TslQuery() {
                     this.readToken = '';
                     this.className = '';
-                    this.labels = [];
+                    this._labels = [];
                     this.sampleAggregator = null;
                     this.span = '1m';
                     this.sampleByPercentile = 50;
@@ -88,13 +88,17 @@ System.register(["./labels"], function (exports_1, context_1) {
                         { name: 'last.lt', type: 'N' },
                         { name: 'last.le', type: 'N' }
                     ];
+                    if (!this._labels) {
+                        this._labels = [];
+                    }
                 }
                 TslQuery.prototype.addLabel = function (key, comparator, val) {
-                    this.labels.push(new labels_1.default(key, comparator, val));
+                    var label = new seriesLabels_1.default(key, comparator, val);
+                    this._labels.push(label);
                 };
                 TslQuery.prototype.delLabel = function (index) {
                     if (index != -1)
-                        this.labels.splice(index, 1);
+                        this._labels.splice(index, 1);
                 };
                 TslQuery.prototype.addGroupByLabel = function (key) {
                     this.groupByLabels.push(key);
@@ -115,7 +119,7 @@ System.register(["./labels"], function (exports_1, context_1) {
                             return q;
                         }
                         q = "select(" + f(this.className) + ")";
-                        var labelsSize = Object.keys(this.labels).length;
+                        var labelsSize = Object.keys(this._labels).length;
                         if (labelsSize == 1) {
                             q += ".where(" + this.loadTSLLabels() + ")";
                         }
@@ -189,7 +193,7 @@ System.register(["./labels"], function (exports_1, context_1) {
                 TslQuery.prototype.loadTSLLabels = function () {
                     var labelsStr = '';
                     var prefix = '';
-                    this.labels.forEach(function (label) {
+                    this._labels.forEach(function (label) {
                         var comparator = label.comparator;
                         if (!label.comparator) {
                             comparator = '=';
