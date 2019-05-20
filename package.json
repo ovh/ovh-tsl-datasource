@@ -28,6 +28,8 @@
     "gulp-plumber-notifier": "0.0.3",
     "gulp-pug": "^4.0.1",
     "gulp-typescript": "^5.0.1",
-    "typescript": "^3.4.4"
+    "typescript": "^3.4.4",
+    "extend": ">=3.0.2",
+    "randomatic": ">=3.0.0"
   }
 }
