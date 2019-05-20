@@ -1,18 +1,21 @@
 ///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
-System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./labels"], function (exports_1, context_1) {
+System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels"], function (exports_1, context_1) {
     "use strict";
     var __extends = (this && this.__extends) || (function () {
-        var extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        var extendStatics = function (d, b) {
+            extendStatics = Object.setPrototypeOf ||
+                ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+                function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            return extendStatics(d, b);
+        };
         return function (d, b) {
             extendStatics(d, b);
             function __() { this.constructor = d; }
             d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
         };
     })();
+    var sdk_1, query_1, ace_mode_tsl_1, seriesLabels_1, TslQueryCtrl;
     var __moduleName = context_1 && context_1.id;
-    var sdk_1, query_1, ace_mode_tsl_1, labels_1, TslQueryCtrl;
     return {
         setters: [
             function (sdk_1_1) {
@@ -24,8 +27,8 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./labels"], fu
             function (ace_mode_tsl_1_1) {
                 ace_mode_tsl_1 = ace_mode_tsl_1_1;
             },
-            function (labels_1_1) {
-                labels_1 = labels_1_1;
+            function (seriesLabels_1_1) {
+                seriesLabels_1 = seriesLabels_1_1;
             }
         ],
         execute: function () {///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
@@ -337,7 +340,7 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./labels"], fu
                     this.target.friendlyQuery.mvOperatorUp(index);
                 };
                 TslQueryCtrl.prototype._addMetaLabel = function () {
-                    var label = new labels_1.default(this.extraMetaLabelKey, this.extraMetaLabelComparator, this.extraMetaLabelValue);
+                    var label = new seriesLabels_1.default(this.extraMetaLabelKey, this.extraMetaLabelComparator, this.extraMetaLabelValue);
                     this.extraMetalabels.push(label);
                     this.extraMetaLabelKey = '';
                     this.extraMetaLabelValue = '';

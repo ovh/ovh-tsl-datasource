@@ -1,8 +1,8 @@
-import Labels from './labels';
+import SeriesLabels from './seriesLabels';
 export default class TslQuery {
     readToken: string;
     className: string;
-    labels: Labels[];
+    _labels: SeriesLabels[];
     sampleAggregator: any;
     span: string;
     sampleByPercentile: number;
@@ -42,7 +42,7 @@ export default class TslQuery {
     delLabel(index: number): void;
     addGroupByLabel(key: string): void;
     delGroupByLabel(key: string): void;
-    private static formatStringVar(s);
+    private static formatStringVar;
     readonly tslScript: string;
     loadTSLLabels(): string;
     addOperator(operator: string, extraParams: string[]): void;

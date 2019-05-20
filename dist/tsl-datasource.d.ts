@@ -36,12 +36,12 @@ export default class TslDatasource {
      * @param ws tsl string
      * @return {Promise<any>} Response
      */
-    private executeExec(query);
+    private executeExec;
     /**
      * Compute Datasource variables and templating variables, store it on top of the stack
      * @return {string} TSL header
      */
-    private computeGrafanaContext();
-    private computeTimeVars(opts);
-    private computePanelRepeatVars(opts);
+    private computeGrafanaContext;
+    private computeTimeVars;
+    private computePanelRepeatVars;
 }
