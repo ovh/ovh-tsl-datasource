@@ -1,5 +1,5 @@
 export default class TslDatasource {
-  basicAuth: string = ''
+  basicAuth: boolean = false
   withCredentials: boolean = false
   id: number = null
   orgId: number = null
@@ -11,7 +11,7 @@ export default class TslDatasource {
   user = ''
   password = ''
 
-  url = 'https://tsl.domain.tld'
+  url = ''
   typeLogoUrl = ''
 
   //basicAuth = true
@@ -19,7 +19,7 @@ export default class TslDatasource {
   //basicAuthPassword = ''
 
   database = ''
-  jsonData: any = {}
+  jsonData: any = { var: {}, useBackend: false}
 
   secureJsonFields = {}
 }

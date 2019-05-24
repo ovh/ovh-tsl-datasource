@@ -1,0 +1,10 @@
+all: grunt build
+
+grunt:
+	grunt
+
+dep:
+	dep ensure -v
+
+build:
+	go build -i -o ./dist/tsl-warp10-plugin_linux_amd64 ./pkg

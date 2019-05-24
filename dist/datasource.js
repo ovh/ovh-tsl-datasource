@@ -7,7 +7,7 @@ System.register([], function (exports_1, context_1) {
         execute: function () {
             TslDatasource = /** @class */ (function () {
                 function TslDatasource() {
-                    this.basicAuth = '';
+                    this.basicAuth = false;
                     this.withCredentials = false;
                     this.id = null;
                     this.orgId = null;
@@ -17,13 +17,13 @@ System.register([], function (exports_1, context_1) {
                     this.access = 'direct';
                     this.user = '';
                     this.password = '';
-                    this.url = 'https://tsl.domain.tld';
+                    this.url = '';
                     this.typeLogoUrl = '';
                     //basicAuth = true
                     //basicAuthUser = ''
                     //basicAuthPassword = ''
                     this.database = '';
-                    this.jsonData = {};
+                    this.jsonData = { var: {}, useBackend: false };
                     this.secureJsonFields = {};
                 }
                 return TslDatasource;

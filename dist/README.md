@@ -87,6 +87,16 @@ To contribute and re-compile you plugin you can simply execute
 npm run build
 ```
 
+# Build TSL grafana backend
+
+The grafana backend is currently under development. 
+To build the TSL backend you need to fetch this github repository in your $GOPATH.
+Then execute
+```sh
+go build -i -o ./dist/tsl-plugin_linux_amd64 ./pkg
+cp dist/tsl-plugin_linux_amd64 /path/to/grafana/data/plugins/tsl/dist/tsl-plugin_linux_amd64
+```
+
 # LICENSE
 
 This plugin was published under the [MIT License](./LICENSE.md)

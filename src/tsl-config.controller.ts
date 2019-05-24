@@ -14,6 +14,10 @@ export default class TslConfigCtrl {
     this.current.id = this.$routeParams.id
     if (this.current.id)
       this._loadDatasourceConfig()
+    
+    if (!this.current.jsonData.var) {
+      this.current.jsonData.var = {}
+    } 
   }
 
   _loadDatasourceConfig() {
@@ -24,19 +28,22 @@ export default class TslConfigCtrl {
   }
 
   _addExtraVar() {
+    if (!this.current.jsonData.var) {
+      this.current.jsonData.var = {}
+    }
     if (this.newExtraKey && this.newExtraVal) {
-      this.current.jsonData[this.newExtraKey] = this.newExtraVal
+      this.current.jsonData.var[this.newExtraKey] = this.newExtraVal
       this.newExtraKey = ''
       this.newExtraVal = ''
     }
   }
 
   _delExtraVar(key) {
-    delete this.current.jsonData[key]
+    delete this.current.jsonData.var[key]
   }
 
   _editKey(key) {
     this.newExtraKey = key
-    this.newExtraVal = this.current.jsonData[key]
+    this.newExtraVal = this.current.jsonData.var[key]
   }
 }

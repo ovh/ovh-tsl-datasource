@@ -1,5 +1,5 @@
-import QueryOptions from './interfaces/query-options';
 import AnnotationOptions from './interfaces/annotation-options';
+import QueryOptions from './interfaces/query-options';
 export default class TslDatasource {
     private instanceSettings;
     private $q;
@@ -13,6 +13,8 @@ export default class TslDatasource {
      * @return {Promise<any>} Grafana datapoints set
      */
     query(opts: QueryOptions): Promise<any>;
+    nameWithTags(series: any): string;
+    doRequest(options: any): any;
     /**
      * used by datasource configuration page to make sure the connection is working
      * @return {Promise<any>} response
@@ -24,7 +26,6 @@ export default class TslDatasource {
      * @return {Promise<any>} results
      */
     annotationQuery(opts: AnnotationOptions): Promise<any>;
-    store: any;
     /**
      * used by query editor to get metric suggestions and templating.
      * @param options

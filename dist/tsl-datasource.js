@@ -1,5 +1,16 @@
 System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, context_1) {
     "use strict";
+    var __assign = (this && this.__assign) || function () {
+        __assign = Object.assign || function(t) {
+            for (var s, i = 1, n = arguments.length; i < n; i++) {
+                s = arguments[i];
+                for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                    t[p] = s[p];
+            }
+            return t;
+        };
+        return __assign.apply(this, arguments);
+    };
     var gts_1, table_1, geo_1, query_1, TslDatasource;
     var __moduleName = context_1 && context_1.id;
     return {
@@ -38,19 +49,27 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     opts.targets.forEach(function (queryRef) {
                         var query = Object.assign({}, queryRef); // Deep copy
                         if (!query.hide) {
-                            if (query.friendlyQuery)
-                                query.friendlyQuery = Object.assign(new query_1.default(), query.friendlyQuery);
-                            // Grafana can send empty Object at the first time, we need to check if there is something
-                            if (query.expr || query.friendlyQuery) {
-                                if (query.advancedMode === undefined)
-                                    query.advancedMode = false;
-                                query.ws = wsHeader + "\n" + (query.advancedMode ? query.expr : query.friendlyQuery.tslScript);
-                                console.warn(query.ws);
-                                query.from = opts.range.from.toISOString();
-                                query.to = opts.range.to.toISOString();
-                                queries.push(query);
-                                console.debug('New Query: ', (query.advancedMode) ? query.expr : query.friendlyQuery);
-                            }
+                            query.target = opts.targets;
+                            query.from = opts.range.from.toISOString();
+                            query.to = opts.range.to.toISOString();
+                            query.ws = wsHeader + "\n";
+                            query.target.forEach(function (element) {
+                                if (element.friendlyQuery)
+                                    element.friendlyQuery = Object.assign(new query_1.default(), element.friendlyQuery);
+                                // Grafana can send empty Object at the first time, we need to check if there is something
+                                if (element.expr || element.friendlyQuery) {
+                                    element.tslHeader = wsHeader;
+                                    if (element.advancedMode === undefined)
+                                        element.advancedMode = false;
+                                    if (element.hideLabels === undefined)
+                                        element.hideLabels = false;
+                                    if (element.hideAttributes === undefined)
+                                        element.hideAttributes = false;
+                                    query.ws = query.ws + "\n" + (element.advancedMode ? element.expr : element.friendlyQuery.tslScript);
+                                }
+                            });
+                            console.debug('New Query: ', query);
+                            queries.push(query);
                         }
                     });
                     if (queries.length === 0) {
@@ -82,6 +101,22 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                                 data = t;
                                 return;
                             }
+                            if (res.data.results) {
+                                var keys = Object.keys(res.data.results);
+                                keys.map(function (key) {
+                                    if (res.data.results[key].series) {
+                                        res.data.results[key].series.forEach(function (s) {
+                                            data.push({ target: s.name + _this.nameWithTags(s), datapoints: s.points });
+                                        });
+                                    }
+                                    if (res.data.results[key].tables) {
+                                        res.data.results[key].tables.forEach(function (s) {
+                                            data.push({ target: s.name, datapoints: s.points });
+                                        });
+                                    }
+                                });
+                                return { data: data };
+                            }
                             gts_1.default.stackFilter(res.data).forEach(function (gts) {
                                 var grafanaGts = {
                                     target: (opts.targets[i].hideLabels) ? gts.c : gts.nameWithLabels,
@@ -106,37 +141,105 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                         return d.promise;
                     });
                 };
+                TslDatasource.prototype.nameWithTags = function (series) {
+                    if (!series.tags) {
+                        return "";
+                    }
+                    var tags = series.tags;
+                    var labelsString = "";
+                    if (tags.l) {
+                        tags.l = JSON.parse(tags.l);
+                        var labelsValues = [];
+                        for (var key in tags.l) {
+                            if (key == ".app") {
+                                continue;
+                            }
+                            labelsValues.push(key + "=" + tags.l[key]);
+                        }
+                        labelsString = "{" + labelsValues.join(',') + "}";
+                    }
+                    var attributeString = "";
+                    if (tags.a) {
+                        tags.a = JSON.parse(tags.a);
+                        var attributesValues = [];
+                        for (var key in tags.a) {
+                            attributesValues.push(key + "=" + tags.a[key]);
+                        }
+                        attributeString = "{" + attributesValues.join(',') + "}";
+                    }
+                    return "" + labelsString + attributeString;
+                };
+                TslDatasource.prototype.doRequest = function (options) {
+                    return this.backendSrv.datasourceRequest(options);
+                };
                 /**
                  * used by datasource configuration page to make sure the connection is working
                  * @return {Promise<any>} response
                  */
                 TslDatasource.prototype.testDatasource = function () {
-                    return this.executeExec({ ws: 'create(series("test"))' })
-                        .then(function (res) {
-                        if (res.data.length !== 1) {
+                    var useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false;
+                    if (useBackend) {
+                        return this.doRequest({
+                            url: this.instanceSettings.url + '/api/v0/exec',
+                            method: 'POST',
+                            data: "NEWGTS 'test' RENAME"
+                        }).then(function (res) {
+                            if (res.data.length !== 1) {
+                                return {
+                                    status: 'error',
+                                    message: JSON.parse(res.data) || res.data,
+                                    title: 'Failed to execute basic tsl'
+                                };
+                            }
+                            else {
+                                return {
+                                    status: 'success',
+                                    message: 'Datasource is working',
+                                    title: 'Success'
+                                };
+                            }
+                        })
+                            .catch(function (res) {
+                            console.log('Error', res);
                             return {
                                 status: 'error',
-                                message: JSON.parse(res.data) || res.data,
-                                title: 'Failed to execute basic tsl'
+                                message: "Status code: " + res.status,
+                                title: 'Failed to contact tsl platform'
                             };
-                        }
-                        else {
+                        });
+                    }
+                    else {
+                        return this.executeExec({
+                            ws: 'create(series("test"))'
+                        })
+                            .then(function (res) {
+                            if (res.data.length !== 1) {
+                                return {
+                                    status: 'error',
+                                    message: JSON.parse(res.data) || res.data,
+                                    title: 'Failed to execute basic tsl'
+                                };
+                            }
+                            else {
+                                return {
+                                    status: 'success',
+                                    message: 'Datasource is working',
+                                    title: 'Success'
+                                };
+                            }
+                        })
+                            .catch(function (res) {
+                            console.log('Error', res);
                             return {
-                                status: 'success',
-                                message: 'Datasource is working',
-                                title: 'Success'
+                                status: 'error',
+                                message: "Status code: " + res.status,
+                                title: 'Failed to contact tsl platform'
                             };
-                        }
-                    })
-                        .catch(function (res) {
-                        console.log('Error', res);
-                        return {
-                            status: 'error',
-                            message: "Status code: " + res.status,
-                            title: 'Failed to contact tsl platform'
-                        };
-                    });
+                        });
+                    }
                 };
+                /*
+                */
                 /**
                  * used by dashboards to get annotations
                  * @param options
@@ -167,12 +270,6 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                                 });
                             });
                         };
-                        /*if (!) {
-                          console.error(`An annotation query must return exactly 1 GTS on top of the stack, annotation: ${ opts.annotation.name }`)
-                          var d = this.$q.defer()
-                          d.resolve([])
-                          return d.promise
-                        }*/
                         for (var _i = 0, _a = gts_1.default.stackFilter(res.data); _i < _a.length; _i++) {
                             var gts = _a[_i];
                             _loop_1(gts);
@@ -214,6 +311,7 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                  * @return {Promise<any>} Response
                  */
                 TslDatasource.prototype.executeExec = function (query) {
+                    var _this = this;
                     var endpoint = this.instanceSettings.url;
                     if ((query.backend !== undefined) && (query.backend.length > 0)) {
                         endpoint = query.backend;
@@ -221,25 +319,41 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     if (endpoint.charAt(endpoint.length - 1) === '/') {
                         endpoint = endpoint.substr(0, endpoint.length - 1);
                     }
-                    var tslQueryRange = '';
-                    if ((query.from !== undefined) && (query.to !== undefined)) {
-                        tslQueryRange = query.from + "," + query.to;
-                    }
                     var auth = undefined;
                     if (this.instanceSettings.basicAuth !== undefined) {
                         auth = this.instanceSettings.basicAuth;
                     }
-                    return this.backendSrv.datasourceRequest({
-                        method: 'POST',
-                        url: endpoint + '/v0/query',
-                        data: query.ws,
-                        headers: {
-                            'Accept': undefined,
-                            'Content-Type': undefined,
-                            'TSL-Query-Range': tslQueryRange,
-                            Authorization: auth,
+                    var useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false;
+                    if (useBackend) {
+                        query.target = query.target.map(function (el) { return (__assign({}, el, { datasourceId: _this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr })); });
+                        var tsdbRequestData = {
+                            from: query.from.valueOf().toString(),
+                            to: query.to.valueOf().toString(),
+                            queries: query.target,
+                        };
+                        return this.backendSrv.datasourceRequest({
+                            url: '/api/tsdb/query',
+                            method: 'POST',
+                            data: tsdbRequestData
+                        });
+                    }
+                    else {
+                        var tslQueryRange = '';
+                        if ((query.from !== undefined) && (query.to !== undefined)) {
+                            tslQueryRange = query.from + "," + query.to;
                         }
-                    });
+                        return this.backendSrv.datasourceRequest({
+                            method: 'POST',
+                            url: endpoint + '/v0/query',
+                            data: query.ws,
+                            headers: {
+                                'Accept': undefined,
+                                'Content-Type': undefined,
+                                'TSL-Query-Range': tslQueryRange,
+                                Authorization: auth,
+                            }
+                        });
+                    }
                 };
                 /**
                  * Compute Datasource variables and templating variables, store it on top of the stack
@@ -248,8 +362,8 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                 TslDatasource.prototype.computeGrafanaContext = function () {
                     var wsHeader = '';
                     // Datasource vars
-                    for (var myVar in this.instanceSettings.jsonData) {
-                        var value = this.instanceSettings.jsonData[myVar];
+                    for (var myVar in this.instanceSettings.jsonData.var) {
+                        var value = this.instanceSettings.jsonData.var[myVar];
                         if (typeof value === 'string')
                             value = value.replace(/'/g, '"');
                         if (typeof value === 'string' && !value.startsWith('<%') && !value.endsWith('%>'))

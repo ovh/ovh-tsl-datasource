@@ -17,6 +17,9 @@ System.register(["./datasource"], function (exports_1, context_1) {
                     this.current.id = this.$routeParams.id;
                     if (this.current.id)
                         this._loadDatasourceConfig();
+                    if (!this.current.jsonData.var) {
+                        this.current.jsonData.var = {};
+                    }
                 }
                 TslConfigCtrl.prototype._loadDatasourceConfig = function () {
                     var _this = this;
@@ -26,18 +29,21 @@ System.register(["./datasource"], function (exports_1, context_1) {
                     });
                 };
                 TslConfigCtrl.prototype._addExtraVar = function () {
+                    if (!this.current.jsonData.var) {
+                        this.current.jsonData.var = {};
+                    }
                     if (this.newExtraKey && this.newExtraVal) {
-                        this.current.jsonData[this.newExtraKey] = this.newExtraVal;
+                        this.current.jsonData.var[this.newExtraKey] = this.newExtraVal;
                         this.newExtraKey = '';
                         this.newExtraVal = '';
                     }
                 };
                 TslConfigCtrl.prototype._delExtraVar = function (key) {
-                    delete this.current.jsonData[key];
+                    delete this.current.jsonData.var[key];
                 };
                 TslConfigCtrl.prototype._editKey = function (key) {
                     this.newExtraKey = key;
-                    this.newExtraVal = this.current.jsonData[key];
+                    this.newExtraVal = this.current.jsonData.var[key];
                 };
                 TslConfigCtrl.templateUrl = 'template/config.html';
                 return TslConfigCtrl;
