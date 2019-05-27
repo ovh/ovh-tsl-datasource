@@ -24,37 +24,36 @@ export default class TslDatasource {
     let queries = []
 
     let wsHeader = this.computeTimeVars(opts) + this.computeGrafanaContext() + this.computePanelRepeatVars(opts)
-    opts.targets.forEach(queryRef => {
-      let query = Object.assign({}, queryRef) // Deep copy
-      if (!query.hide) {
+ 
+    let query = Object.assign({}, opts.targets) // Deep copy
+    if (!query.hide) {
 
-        query.target = opts.targets
-        query.from = opts.range.from.toISOString()
-        query.to = opts.range.to.toISOString()
+      query.target = opts.targets
+      query.from = opts.range.from.toISOString()
+      query.to = opts.range.to.toISOString()
 
-        query.ws = `${wsHeader}\n`
+      query.ws = `${wsHeader}\n`
 
-        query.target.forEach(element => {
-        if (element.friendlyQuery)
-          element.friendlyQuery = Object.assign(new Query(), element.friendlyQuery)
+      query.target.forEach(element => {
+      if (element.friendlyQuery)
+        element.friendlyQuery = Object.assign(new Query(), element.friendlyQuery)
 
-          // Grafana can send empty Object at the first time, we need to check if there is something
-          if (element.expr || element.friendlyQuery) {
-            element.tslHeader = wsHeader
-            if (element.advancedMode === undefined)
-              element.advancedMode = false
-            if (element.hideLabels === undefined)
-              element.hideLabels = false
-            if (element.hideAttributes === undefined)
-              element.hideAttributes = false
-            query.ws = `${query.ws}\n${element.advancedMode ? element.expr : element.friendlyQuery.tslScript}`
-          }
-        })
+        // Grafana can send empty Object at the first time, we need to check if there is something
+        if (element.expr || element.friendlyQuery) {
+          element.tslHeader = wsHeader
+          if (element.advancedMode === undefined)
+            element.advancedMode = false
+          if (element.hideLabels === undefined)
+            element.hideLabels = false
+          if (element.hideAttributes === undefined)
+            element.hideAttributes = false
+          query.ws = `${query.ws}\n${element.advancedMode ? element.expr : element.friendlyQuery.tslScript}`
+        }
+      })
 
-        console.debug('New Query: ', query) 
-        queries.push(query)
-      }
-    })
+      console.debug('New Query: ', query) 
+      queries.push(query)
+    }
 
     if (queries.length === 0) {
       let d = this.$q.defer();
@@ -63,6 +62,8 @@ export default class TslDatasource {
     }
 
     queries = queries.map(this.executeExec.bind(this))
+
+
 
     return this.$q.all(queries)
       .then((responses) => {
@@ -168,6 +169,89 @@ export default class TslDatasource {
     return this.backendSrv.datasourceRequest(options);
   }
 
+  performInstantQuery(query, time) {
+    const url = '/api/v1/query';
+    const data = {
+      query: query.expr,
+      time: time,
+    };
+    data['timeout'] = "60s";
+    return this.promNativeRequest(url, data, { requestId: query.requestId });
+  }
+
+  promNativeRequest(url, data, requestId) {
+    let options = {   
+      requestId: requestId, url: this.instanceSettings.url + url, method: "GET", withCredentials: false, headers: {}
+    }
+
+    if (options.method === 'GET') {
+        options.url =
+          options.url +
+          '?'
+
+        let query = []
+        for (let k in data) {
+          let v = data[k]
+          query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
+        }
+
+        options.url = options.url + query.join('&')
+    }
+
+    if (this.instanceSettings.basicAuth || this.instanceSettings.withCredentials) {
+      options.withCredentials = true;
+    }
+
+    if (this.instanceSettings.basicAuth) {
+      options.headers = {
+        Authorization: this.instanceSettings.basicAuth,
+      };
+    }
+
+    return this.backendSrv.datasourceRequest(options);
+  }
+
+  prometheusRequest() {
+    const now = new Date().getTime();
+    return this.performInstantQuery({ expr: '1+1' }, now / 1000).then(response => {
+      if (response.data.status === 'success') {
+        return { status: 'success', message: 'Data source is working' };
+      } else {
+        return { status: 'error', message: response.error };
+      }
+    });
+  }
+
+  warp10Request() {
+    return this.doRequest({
+      url: this.instanceSettings.url + '/api/v0/exec',
+      method: 'POST',
+      data:"NEWGTS 'test' RENAME"
+    }).then(res => {
+      if (res.data.length !== 1) {
+        return {
+          status: 'error',
+          message: JSON.parse(res.data) || res.data,
+          title: 'Failed to execute basic tsl'
+        }
+      } else {
+        return {
+          status: 'success',
+          message: 'Datasource is working',
+          title: 'Success'
+        }
+      }
+    })
+    .catch((res) => {
+      console.log('Error', res)
+      return {
+        status: 'error',
+        message: `Status code: ${res.status}`,
+        title: 'Failed to contact tsl platform'
+      }
+    })
+  }
+
   /**
    * used by datasource configuration page to make sure the connection is working
    * @return {Promise<any>} response
@@ -176,33 +260,11 @@ export default class TslDatasource {
     let useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false
 
     if (useBackend) {
-      return this.doRequest({
-        url: this.instanceSettings.url + '/api/v0/exec',
-        method: 'POST',
-        data:"NEWGTS 'test' RENAME"
-      }).then(res => {
-        if (res.data.length !== 1) {
-          return {
-            status: 'error',
-            message: JSON.parse(res.data) || res.data,
-            title: 'Failed to execute basic tsl'
-          }
-        } else {
-          return {
-            status: 'success',
-            message: 'Datasource is working',
-            title: 'Success'
-          }
-        }
-      })
-      .catch((res) => {
-        console.log('Error', res)
-        return {
-          status: 'error',
-          message: `Status code: ${res.status}`,
-          title: 'Failed to contact tsl platform'
-        }
-      })
+      if (!this.instanceSettings.jsonData.tslBackend) {
+        return this.warp10Request()
+      } else {
+        return this.prometheusRequest()
+      }
     } else {
       return this.executeExec({ 
         ws: 'create(series("test"))'
@@ -326,8 +388,9 @@ export default class TslDatasource {
     let useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false
 
     if (useBackend) {
+      let tslBackend = !!this.instanceSettings.jsonData.tslBackend ? this.instanceSettings.jsonData.tslBackend : "warp10"
       query.target = query.target.map(el => ({   
-        ...el,   datasourceId: this.instanceSettings.id,   auth: auth,   tsl: !!el.friendlyQuery.tslScript   ? el.friendlyQuery.tslScript   : el.expr 
+        ...el, tslBackend: tslBackend, datasourceId: this.instanceSettings.id,   auth: auth,   tsl: !!el.friendlyQuery.tslScript   ? el.friendlyQuery.tslScript   : el.expr 
       }))
       const tsdbRequestData = {
         from: query.from.valueOf().toString(),

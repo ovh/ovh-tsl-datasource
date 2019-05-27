@@ -39,3 +39,6 @@ grafana
 
 # Ignore go backend plugin
 /dist/tsl-plugin*
+
+# Go vendor
+/vendor

@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/grafana/grafana-plugin-model/go/datasource"
@@ -14,11 +18,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TslDatasource is the grafana backend plugin implementation for TSL
 type TslDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
 	logger hclog.Logger
 }
 
+// Query function called by Grafana when executing a query
 func (tsl *TslDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
 	tsl.logger.Debug("Query", "datasource", tsdbReq.Datasource.Name, "TimeRange", tsdbReq.TimeRange)
 
@@ -32,6 +38,7 @@ func (tsl *TslDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasou
 	return tsl.MetricQuery(ctx, tsdbReq)
 }
 
+// MetricQuery corresponds to graph query for TSL
 func (tsl *TslDatasource) MetricQuery(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
 	jsonQueries, err := parseJSONQueries(tsdbReq)
 
@@ -93,72 +100,109 @@ func (tsl *TslDatasource) MetricQuery(ctx context.Context, tsdbReq *datasource.D
 			token = tsl.GetTokenFromAuth(basicAuth)
 		}
 
-		warpScript, err := proxy.GenerateNativeQueriesWithParams("warp10", tslString, token, true, params)
+		backendType, err := item.Get("tslBackend").String()
+		if err != nil {
+			resultSet[index] = tsl.GetErrorMessage(errors.New("Couldn't parse Grafana TSL backend type"), refID)
+			continue
+		}
+
+		queryScript, err := proxy.GenerateNativeQueriesWithParams(backendType, tslString, token, true, params)
 
 		if err != nil {
 			resultSet[index] = tsl.GetErrorMessage(err, refID)
 			continue
 		}
 
-		warpServer := NewWarpServer(tsdbReq.Datasource.Url, "protocol")
-		resp, err := warpServer.QueryGTSs(warpScript)
-
-		if err != nil {
-			resultSet[index] = tsl.GetErrorMessage(err, refID)
-			continue
+		switch backendType {
+		case "warp10":
+			resultSet[index] = tsl.GetWarp10Result(tsdbReq.Datasource.Url, queryScript, refID, hide, hideAttributes, hideLabels)
+			break
+		case "prometheus":
+			resultSet[index] = tsl.GetPromResult(tsdbReq.Datasource.Url, queryScript, refID, basicAuth, hide, hideAttributes, hideLabels)
+			break
+		default:
+			resultSet[index] = tsl.GetErrorMessage(errors.New("Couldn't find Grafana TSL backend type"), refID)
 		}
 
-		gtsSet := resp[0]
-		seriesSet := make([]*datasource.TimeSeries, len(gtsSet))
+	}
+	result := &datasource.DatasourceResponse{Results: resultSet}
 
-		for i, gts := range gtsSet {
+	return result, nil
+}
 
-			// Parse series tags
+// GetPromResult execute TSL native Queries on a Prometheus backend
+func (tsl *TslDatasource) GetPromResult(endpoint, promScript, refID, basicAuth string, hide, hideAttributes, hideLabels bool) *datasource.QueryResult {
+	promQueries := strings.Split(promScript, "\n")
+
+	seriesSet := make([]*datasource.TimeSeries, 0)
+	for _, query := range promQueries {
+
+		if query == "" {
+			continue
+		}
+		res, err := tsl.execProm(endpoint, query, basicAuth)
+		if err != nil {
+			return tsl.GetErrorMessage(err, refID)
+		}
+
+		promResponse := &PrometheusResponse{}
+		err = json.Unmarshal([]byte(res), promResponse)
+		if err != nil {
+			return tsl.GetErrorMessage(errors.New("Couldn't unmarshall prometheus response"), refID)
+		}
+
+		if promResponse.Status == "error" {
+			return tsl.GetErrorMessage(errors.New(res), refID)
+		}
+
+		for _, series := range promResponse.Data.Result {
+			metrics := series.Metric
+			seriesName := metrics["__name__"]
+
 			tags := make(map[string]string)
-
 			if !hideLabels {
-				labels, err := json.Marshal(gts.Labels)
+				delete(metrics, "__name__")
+				delete(metrics, ".app")
+				labels, err := json.Marshal(metrics)
 				if err != nil {
-					resultSet[index] = tsl.GetErrorMessage(errors.New("Couldn't unmarshall time series labels"), refID)
-					goto Done
+					return tsl.GetErrorMessage(errors.New("Couldn't unmarshall time series labels"), refID)
 				}
 				tags["l"] = string(labels)
 			}
 
-			if !hideAttributes {
-				attributes, err := json.Marshal(gts.Attrs)
-				if err != nil {
-					resultSet[index] = tsl.GetErrorMessage(errors.New("Couldn't unmarshall time series attributes"), refID)
-					goto Done
-				}
-				tags["a"] = string(attributes)
-			}
-
 			// Parse series data points
-			seriesPoint := make([]*datasource.Point, len(gts.Values))
-			for dpIndex, dp := range gts.Values {
+			seriesPoint := make([]*datasource.Point, len(series.Values))
+			for dpIndex, dp := range series.Values {
 				hasTimestamp := false
 				timestamp := int64(-1)
 				switch tick := dp[0].(type) {
 				case float64:
-					timestamp = int64(tick) / 1000
+					timestamp = int64(tick) * 1000
 					hasTimestamp = true
 					break
 				case int64:
-					timestamp = tick / 1000
+					timestamp = tick * 1000
 					hasTimestamp = true
 					break
 				case int:
-					timestamp = int64(tick) / 1000
+					timestamp = int64(tick) * 1000
 					hasTimestamp = true
 					break
 				}
 
 				hasValue := false
 				value := float64(-1)
-				switch val := dp[len(dp)-1].(type) {
+				switch val := dp[1].(type) {
 				case float64:
 					value = val
+					hasValue = true
+					break
+				case string:
+					value, err = strconv.ParseFloat(val, 64)
+					if err != nil {
+						hasValue = false
+						break
+					}
 					hasValue = true
 					break
 				case int64:
@@ -176,25 +220,145 @@ func (tsl *TslDatasource) MetricQuery(ctx context.Context, tsdbReq *datasource.D
 				} else {
 					// Break in case of error
 					if !hasTimestamp {
-						resultSet[index] = tsl.GetErrorMessage(errors.New("Unvalid time series timestamp type"), refID)
-						goto Done
+						return tsl.GetErrorMessage(errors.New("Unvalid time series timestamp type"), refID)
 					} else if !hasValue {
-						resultSet[index] = tsl.GetErrorMessage(errors.New("Unvalid time series value type"), refID)
-						goto Done
+						return tsl.GetErrorMessage(errors.New("Unvalid time series value type"), refID)
 					}
 				}
 			}
 
-			// Return series
-			series := &datasource.TimeSeries{Name: gts.Class, Tags: tags, Points: seriesPoint}
-			seriesSet[i] = series
-		}
-		resultSet[index] = &datasource.QueryResult{Series: seriesSet, RefId: refID}
-	Done:
-	}
-	result := &datasource.DatasourceResponse{Results: resultSet}
+			series := &datasource.TimeSeries{Name: seriesName, Tags: tags, Points: seriesPoint}
 
-	return result, nil
+			seriesSet = append(seriesSet, series)
+		}
+	}
+	return &datasource.QueryResult{Series: seriesSet, RefId: refID}
+}
+
+// Execute PromQL on prometheus metrics backend
+func (tsl *TslDatasource) execProm(endpoint, query, basicAuth string) (string, error) {
+
+	u, err := url.Parse(endpoint + query)
+
+	if err != nil {
+		return "", err
+	}
+
+	httpReq, err := http.NewRequest("GET", u.String(), nil)
+
+	httpReq.Header.Add("Authorization", basicAuth)
+
+	if err != nil {
+		return "", err
+	}
+
+	res, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return "", err
+	}
+
+	defer res.Body.Close()
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(res.Body)
+
+	if res.StatusCode != http.StatusOK {
+		//return "",
+		var message proxy.PromError
+		json.Unmarshal(buf.Bytes(), &message)
+		return buf.String(), errors.New("Fail to execute Prom request: " + message.Error)
+	}
+
+	return buf.String(), nil
+}
+
+// GetWarp10Result execute TSL native Queries on a Warp10 backend
+func (tsl *TslDatasource) GetWarp10Result(endpoint, warpScript, refID string, hide, hideAttributes, hideLabels bool) *datasource.QueryResult {
+	warpServer := NewWarpServer(endpoint, "warp10")
+	resp, err := warpServer.QueryGTSs(warpScript)
+
+	if err != nil {
+		return tsl.GetErrorMessage(err, refID)
+	}
+
+	gtsSet := resp[0]
+	seriesSet := make([]*datasource.TimeSeries, len(gtsSet))
+
+	for i, gts := range gtsSet {
+
+		// Parse series tags
+		tags := make(map[string]string)
+
+		if !hideLabels {
+			labels, err := json.Marshal(gts.Labels)
+			if err != nil {
+				return tsl.GetErrorMessage(errors.New("Couldn't unmarshall time series labels"), refID)
+			}
+			tags["l"] = string(labels)
+		}
+
+		if !hideAttributes {
+			attributes, err := json.Marshal(gts.Attrs)
+			if err != nil {
+				return tsl.GetErrorMessage(errors.New("Couldn't unmarshall time series attributes"), refID)
+			}
+			tags["a"] = string(attributes)
+		}
+
+		// Parse series data points
+		seriesPoint := make([]*datasource.Point, len(gts.Values))
+		for dpIndex, dp := range gts.Values {
+			hasTimestamp := false
+			timestamp := int64(-1)
+			switch tick := dp[0].(type) {
+			case float64:
+				timestamp = int64(tick) / 1000
+				hasTimestamp = true
+				break
+			case int64:
+				timestamp = tick / 1000
+				hasTimestamp = true
+				break
+			case int:
+				timestamp = int64(tick) / 1000
+				hasTimestamp = true
+				break
+			}
+
+			hasValue := false
+			value := float64(-1)
+			switch val := dp[len(dp)-1].(type) {
+			case float64:
+				value = val
+				hasValue = true
+				break
+			case int64:
+				value = float64(val)
+				hasValue = true
+				break
+			case int:
+				value = float64(val)
+				hasValue = true
+				break
+			}
+
+			if hasTimestamp && hasValue {
+				seriesPoint[dpIndex] = &datasource.Point{Timestamp: timestamp, Value: value}
+			} else {
+				// Break in case of error
+				if !hasTimestamp {
+					return tsl.GetErrorMessage(errors.New("Unvalid time series timestamp type"), refID)
+				} else if !hasValue {
+					return tsl.GetErrorMessage(errors.New("Unvalid time series value type"), refID)
+				}
+			}
+		}
+
+		// Return series
+		series := &datasource.TimeSeries{Name: gts.Class, Tags: tags, Points: seriesPoint}
+		seriesSet[i] = series
+	}
+	return &datasource.QueryResult{Series: seriesSet, RefId: refID}
 }
 
 // GetErrorMessage generate a Query Result error message based on a golang error
@@ -230,11 +394,11 @@ func GetQueryType(tsdbReq *datasource.DatasourceRequest) (string, error) {
 	queryType := "query"
 	if len(tsdbReq.Queries) > 0 {
 		firstQuery := tsdbReq.Queries[0]
-		queryJson, err := simplejson.NewJson([]byte(firstQuery.ModelJson))
+		queryJSON, err := simplejson.NewJson([]byte(firstQuery.ModelJson))
 		if err != nil {
 			return "", err
 		}
-		queryType = queryJson.Get("queryType").MustString("query")
+		queryType = queryJSON.Get("queryType").MustString("query")
 	}
 	return queryType, nil
 }

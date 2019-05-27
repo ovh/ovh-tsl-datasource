@@ -6,23 +6,30 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 )
 
-type TargetResponseDTO struct {
-	Target     string           `json:"target,omitempty"`
-	DataPoints TimeSeriesPoints `json:"datapoints,omitempty"`
-	Columns    []TableColumn    `json:"columns,omitempty"`
-	Rows       []RowValues      `json:"values,omitempty"`
+// PrometheusResponse structure
+type PrometheusResponse struct {
+	Status    string                 `json:"status"`
+	Data      PrometheusDataResponse `json:"data,omitempty"`
+	ErrorType string                 `json:"errorType,omitempty"`
+	Error     string                 `json:"error,omitempty"`
 }
 
-type TimePoint [2]float64
-type TimeSeriesPoints []TimePoint
-
-type TableColumn struct {
-	Text string `json:"text"`
-	Type string `json:"type"`
+// PrometheusDataResponse internal structure
+type PrometheusDataResponse struct {
+	ResultType string                     `json:"resultType"`
+	Result     []PrometheusResultResponse `json:"result"`
 }
 
-type RowValues []interface{}
+// PrometheusResultResponse series structure
+type PrometheusResultResponse struct {
+	Metric map[string]string `json:"metric"`
 
+	// Values are heterogen, hence the interface. One datapoint is looking like this:
+	//[ 1435781460.781, "1" ]
+	Values [][]interface{} `json:"values"`
+}
+
+// RemoteDatasourceRequest grafana request parsed structure
 type RemoteDatasourceRequest struct {
 	queryType string
 	req       *http.Request

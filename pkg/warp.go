@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -111,12 +110,12 @@ func (server *HTTPWarp10Server) Query(body string) (*http.Response, error) {
 		if warp10Resp.StatusCode == http.StatusInternalServerError {
 			wErr = warp10Resp.Header.Get("X-Warp10-Error-Message")
 		}
-		return nil, errors.New(fmt.Sprintf("WarpScript error: %s", wErr))
+		return nil, fmt.Errorf("WarpScript error: %s", wErr)
 	}
 
 	if warp10Resp.StatusCode == http.StatusInternalServerError {
 		wErr := warp10Resp.Header.Get("X-Warp10-Error-Message")
-		return nil, errors.New(fmt.Sprintf("WarpScript error: %s", wErr))
+		return nil, fmt.Errorf("WarpScript error: %s", wErr)
 	}
 
 	return warp10Resp, nil

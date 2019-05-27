@@ -15,6 +15,10 @@ export default class TslDatasource {
     query(opts: QueryOptions): Promise<any>;
     nameWithTags(series: any): string;
     doRequest(options: any): any;
+    performInstantQuery(query: any, time: any): any;
+    promNativeRequest(url: any, data: any, requestId: any): any;
+    prometheusRequest(): any;
+    warp10Request(): any;
     /**
      * used by datasource configuration page to make sure the connection is working
      * @return {Promise<any>} response

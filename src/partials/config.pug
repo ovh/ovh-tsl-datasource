@@ -24,7 +24,11 @@ h3.page-heading Execution constants
 
 h3 TSL Backend
   gf-form-switch.gf-form(label='Use grafana backend' checked='ctrl.current.jsonData.useBackend')
-
+  .gf-form(ng-if='ctrl.current.jsonData.useBackend')
+    label.gf-form-label.width-6 Type:
+    select(ng-model='ctrl.current.jsonData.tslBackend').width-10
+      option(value='' selected) warp10
+      option(value='prometheus') prometheus
 
 h6 Add a new constant
 .gf-form

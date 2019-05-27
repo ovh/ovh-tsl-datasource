@@ -46,32 +46,30 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     var _this = this;
                     var queries = [];
                     var wsHeader = this.computeTimeVars(opts) + this.computeGrafanaContext() + this.computePanelRepeatVars(opts);
-                    opts.targets.forEach(function (queryRef) {
-                        var query = Object.assign({}, queryRef); // Deep copy
-                        if (!query.hide) {
-                            query.target = opts.targets;
-                            query.from = opts.range.from.toISOString();
-                            query.to = opts.range.to.toISOString();
-                            query.ws = wsHeader + "\n";
-                            query.target.forEach(function (element) {
-                                if (element.friendlyQuery)
-                                    element.friendlyQuery = Object.assign(new query_1.default(), element.friendlyQuery);
-                                // Grafana can send empty Object at the first time, we need to check if there is something
-                                if (element.expr || element.friendlyQuery) {
-                                    element.tslHeader = wsHeader;
-                                    if (element.advancedMode === undefined)
-                                        element.advancedMode = false;
-                                    if (element.hideLabels === undefined)
-                                        element.hideLabels = false;
-                                    if (element.hideAttributes === undefined)
-                                        element.hideAttributes = false;
-                                    query.ws = query.ws + "\n" + (element.advancedMode ? element.expr : element.friendlyQuery.tslScript);
-                                }
-                            });
-                            console.debug('New Query: ', query);
-                            queries.push(query);
-                        }
-                    });
+                    var query = Object.assign({}, opts.targets); // Deep copy
+                    if (!query.hide) {
+                        query.target = opts.targets;
+                        query.from = opts.range.from.toISOString();
+                        query.to = opts.range.to.toISOString();
+                        query.ws = wsHeader + "\n";
+                        query.target.forEach(function (element) {
+                            if (element.friendlyQuery)
+                                element.friendlyQuery = Object.assign(new query_1.default(), element.friendlyQuery);
+                            // Grafana can send empty Object at the first time, we need to check if there is something
+                            if (element.expr || element.friendlyQuery) {
+                                element.tslHeader = wsHeader;
+                                if (element.advancedMode === undefined)
+                                    element.advancedMode = false;
+                                if (element.hideLabels === undefined)
+                                    element.hideLabels = false;
+                                if (element.hideAttributes === undefined)
+                                    element.hideAttributes = false;
+                                query.ws = query.ws + "\n" + (element.advancedMode ? element.expr : element.friendlyQuery.tslScript);
+                            }
+                        });
+                        console.debug('New Query: ', query);
+                        queries.push(query);
+                    }
                     if (queries.length === 0) {
                         var d = this.$q.defer();
                         d.resolve({ data: [] });
@@ -80,6 +78,7 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     queries = queries.map(this.executeExec.bind(this));
                     return this.$q.all(queries)
                         .then(function (responses) {
+                        console.log(responses);
                         // Grafana formated GTS
                         var data = [];
                         responses.forEach(function (res, i) {
@@ -172,6 +171,81 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                 TslDatasource.prototype.doRequest = function (options) {
                     return this.backendSrv.datasourceRequest(options);
                 };
+                TslDatasource.prototype.performInstantQuery = function (query, time) {
+                    var url = '/api/v1/query';
+                    var data = {
+                        query: query.expr,
+                        time: time,
+                    };
+                    data['timeout'] = "60s";
+                    return this.promNativeRequest(url, data, { requestId: query.requestId });
+                };
+                TslDatasource.prototype.promNativeRequest = function (url, data, requestId) {
+                    var options = {
+                        requestId: requestId, url: this.instanceSettings.url + url, method: "GET", withCredentials: false, headers: {}
+                    };
+                    if (options.method === 'GET') {
+                        options.url =
+                            options.url +
+                                '?';
+                        var query = [];
+                        for (var k in data) {
+                            var v = data[k];
+                            query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+                        }
+                        options.url = options.url + query.join('&');
+                    }
+                    if (this.instanceSettings.basicAuth || this.instanceSettings.withCredentials) {
+                        options.withCredentials = true;
+                    }
+                    if (this.instanceSettings.basicAuth) {
+                        options.headers = {
+                            Authorization: this.instanceSettings.basicAuth,
+                        };
+                    }
+                    return this.backendSrv.datasourceRequest(options);
+                };
+                TslDatasource.prototype.prometheusRequest = function () {
+                    var now = new Date().getTime();
+                    return this.performInstantQuery({ expr: '1+1' }, now / 1000).then(function (response) {
+                        if (response.data.status === 'success') {
+                            return { status: 'success', message: 'Data source is working' };
+                        }
+                        else {
+                            return { status: 'error', message: response.error };
+                        }
+                    });
+                };
+                TslDatasource.prototype.warp10Request = function () {
+                    return this.doRequest({
+                        url: this.instanceSettings.url + '/api/v0/exec',
+                        method: 'POST',
+                        data: "NEWGTS 'test' RENAME"
+                    }).then(function (res) {
+                        if (res.data.length !== 1) {
+                            return {
+                                status: 'error',
+                                message: JSON.parse(res.data) || res.data,
+                                title: 'Failed to execute basic tsl'
+                            };
+                        }
+                        else {
+                            return {
+                                status: 'success',
+                                message: 'Datasource is working',
+                                title: 'Success'
+                            };
+                        }
+                    })
+                        .catch(function (res) {
+                        console.log('Error', res);
+                        return {
+                            status: 'error',
+                            message: "Status code: " + res.status,
+                            title: 'Failed to contact tsl platform'
+                        };
+                    });
+                };
                 /**
                  * used by datasource configuration page to make sure the connection is working
                  * @return {Promise<any>} response
@@ -179,34 +253,12 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                 TslDatasource.prototype.testDatasource = function () {
                     var useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false;
                     if (useBackend) {
-                        return this.doRequest({
-                            url: this.instanceSettings.url + '/api/v0/exec',
-                            method: 'POST',
-                            data: "NEWGTS 'test' RENAME"
-                        }).then(function (res) {
-                            if (res.data.length !== 1) {
-                                return {
-                                    status: 'error',
-                                    message: JSON.parse(res.data) || res.data,
-                                    title: 'Failed to execute basic tsl'
-                                };
-                            }
-                            else {
-                                return {
-                                    status: 'success',
-                                    message: 'Datasource is working',
-                                    title: 'Success'
-                                };
-                            }
-                        })
-                            .catch(function (res) {
-                            console.log('Error', res);
-                            return {
-                                status: 'error',
-                                message: "Status code: " + res.status,
-                                title: 'Failed to contact tsl platform'
-                            };
-                        });
+                        if (!this.instanceSettings.jsonData.tslBackend) {
+                            return this.warp10Request();
+                        }
+                        else {
+                            return this.prometheusRequest();
+                        }
                     }
                     else {
                         return this.executeExec({
@@ -325,7 +377,8 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     }
                     var useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false;
                     if (useBackend) {
-                        query.target = query.target.map(function (el) { return (__assign({}, el, { datasourceId: _this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr })); });
+                        var tslBackend_1 = !!this.instanceSettings.jsonData.tslBackend ? this.instanceSettings.jsonData.tslBackend : "warp10";
+                        query.target = query.target.map(function (el) { return (__assign({}, el, { tslBackend: tslBackend_1, datasourceId: _this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr })); });
                         var tsdbRequestData = {
                             from: query.from.valueOf().toString(),
                             to: query.to.valueOf().toString(),
