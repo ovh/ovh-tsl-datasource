@@ -1,10 +1,11 @@
-import QueryOptions from './interfaces/query-options'
 import AnnotationOptions from './interfaces/annotation-options'
 import GTS from './gts'
 import { Table } from './table'
 import { isGeoJson } from './geo'
 import Query from './query'
+import QueryOptions from './interfaces/query-options'
 import { String } from 'es6-shim';
+
 
 export default class TslDatasource {
 
@@ -23,28 +24,36 @@ export default class TslDatasource {
     let queries = []
 
     let wsHeader = this.computeTimeVars(opts) + this.computeGrafanaContext() + this.computePanelRepeatVars(opts)
-    opts.targets.forEach(queryRef => {
-      let query = Object.assign({}, queryRef) // Deep copy
-      if (!query.hide) {
-        if (query.friendlyQuery)
-          query.friendlyQuery = Object.assign(new Query(), query.friendlyQuery)
+ 
+    let query = Object.assign({}, opts.targets) // Deep copy
+    if (!query.hide) {
+
+      query.target = opts.targets
+      query.from = opts.range.from.toISOString()
+      query.to = opts.range.to.toISOString()
+
+      query.ws = `${wsHeader}\n`
+
+      query.target.forEach(element => {
+      if (element.friendlyQuery)
+        element.friendlyQuery = Object.assign(new Query(), element.friendlyQuery)
+
         // Grafana can send empty Object at the first time, we need to check if there is something
-        if (query.expr || query.friendlyQuery) {
-          if (query.advancedMode === undefined)
-            query.advancedMode = false
-          
-          query.ws = `${wsHeader}\n${query.advancedMode ? query.expr : query.friendlyQuery.tslScript}`
-
-          console.warn(query.ws)
-          query.from = opts.range.from.toISOString()
-          query.to = opts.range.to.toISOString()
-
-          
-          queries.push(query)
-          console.debug('New Query: ', (query.advancedMode) ? query.expr : query.friendlyQuery) 
+        if (element.expr || element.friendlyQuery) {
+          element.tslHeader = wsHeader
+          if (element.advancedMode === undefined)
+            element.advancedMode = false
+          if (element.hideLabels === undefined)
+            element.hideLabels = false
+          if (element.hideAttributes === undefined)
+            element.hideAttributes = false
+          query.ws = `${query.ws}\n${element.advancedMode ? element.expr : element.friendlyQuery.tslScript}`
         }
-      }
-    })
+      })
+
+      console.debug('New Query: ', query) 
+      queries.push(query)
+    }
 
     if (queries.length === 0) {
       let d = this.$q.defer();
@@ -53,6 +62,8 @@ export default class TslDatasource {
     }
 
     queries = queries.map(this.executeExec.bind(this))
+
+
 
     return this.$q.all(queries)
       .then((responses) => {
@@ -78,6 +89,23 @@ export default class TslDatasource {
             t.type = 'table'
             data = t
             return
+          }
+
+          if (res.data.results) {
+            let keys = Object.keys(res.data.results)
+            keys.map(key => {
+              if (res.data.results[key].series) {
+                res.data.results[key].series.forEach(s => {
+                  data.push({target: s.name + this.nameWithTags(s), datapoints: s.points})
+                })
+              }
+              if (res.data.results[key].tables) {
+                res.data.results[key].tables.forEach(s => {
+                  data.push({target: s.name, datapoints: s.points})
+                })
+              }
+            })
+            return { data }
           }
 
           GTS.stackFilter(res.data).forEach(gts => {
@@ -106,12 +134,141 @@ export default class TslDatasource {
       })
   }
 
+  nameWithTags(series): string {
+    if (!series.tags) {
+      return ""
+    }
+    let tags = series.tags
+
+    let labelsString = ""
+    if (tags.l) {
+      tags.l = JSON.parse(tags.l)
+      let labelsValues = []
+      for (let key in tags.l) {
+        if (key == ".app") {
+          continue
+        }
+          labelsValues.push(`${ key }=${ tags.l[key] }`)
+      }
+      labelsString = `{${ labelsValues.join(',') }}`
+    }
+
+    let attributeString = ""
+    if (tags.a) {
+      tags.a = JSON.parse(tags.a)
+      let attributesValues = []
+      for (let key in tags.a) {
+          attributesValues.push(`${ key }=${ tags.a[key] }`)
+      }
+      attributeString = `{${ attributesValues.join(',') }}`
+    }
+    return `${labelsString}${attributeString}`
+  }
+
+  doRequest(options) {
+    return this.backendSrv.datasourceRequest(options);
+  }
+
+  performInstantQuery(query, time) {
+    const url = '/api/v1/query';
+    const data = {
+      query: query.expr,
+      time: time,
+    };
+    data['timeout'] = "60s";
+    return this.promNativeRequest(url, data, { requestId: query.requestId });
+  }
+
+  promNativeRequest(url, data, requestId) {
+    let options = {   
+      requestId: requestId, url: this.instanceSettings.url + url, method: "GET", withCredentials: false, headers: {}
+    }
+
+    if (options.method === 'GET') {
+        options.url =
+          options.url +
+          '?'
+
+        let query = []
+        for (let k in data) {
+          let v = data[k]
+          query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
+        }
+
+        options.url = options.url + query.join('&')
+    }
+
+    if (this.instanceSettings.basicAuth || this.instanceSettings.withCredentials) {
+      options.withCredentials = true;
+    }
+
+    if (this.instanceSettings.basicAuth) {
+      options.headers = {
+        Authorization: this.instanceSettings.basicAuth,
+      };
+    }
+
+    return this.backendSrv.datasourceRequest(options);
+  }
+
+  prometheusRequest() {
+    const now = new Date().getTime();
+    return this.performInstantQuery({ expr: '1+1' }, now / 1000).then(response => {
+      if (response.data.status === 'success') {
+        return { status: 'success', message: 'Data source is working' };
+      } else {
+        return { status: 'error', message: response.error };
+      }
+    });
+  }
+
+  warp10Request() {
+    return this.doRequest({
+      url: this.instanceSettings.url + '/api/v0/exec',
+      method: 'POST',
+      data:"NEWGTS 'test' RENAME"
+    }).then(res => {
+      if (res.data.length !== 1) {
+        return {
+          status: 'error',
+          message: JSON.parse(res.data) || res.data,
+          title: 'Failed to execute basic tsl'
+        }
+      } else {
+        return {
+          status: 'success',
+          message: 'Datasource is working',
+          title: 'Success'
+        }
+      }
+    })
+    .catch((res) => {
+      console.log('Error', res)
+      return {
+        status: 'error',
+        message: `Status code: ${res.status}`,
+        title: 'Failed to contact tsl platform'
+      }
+    })
+  }
+
   /**
    * used by datasource configuration page to make sure the connection is working
    * @return {Promise<any>} response
    */
   testDatasource(): Promise<any> {
-    return this.executeExec({ ws: 'create(series("test"))' })
+    let useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false
+
+    if (useBackend) {
+      if (!this.instanceSettings.jsonData.tslBackend) {
+        return this.warp10Request()
+      } else {
+        return this.prometheusRequest()
+      }
+    } else {
+      return this.executeExec({ 
+        ws: 'create(series("test"))'
+      })
       .then(res => {
         if (res.data.length !== 1) {
           return {
@@ -135,7 +292,11 @@ export default class TslDatasource {
           title: 'Failed to contact tsl platform'
         }
       })
+    }
   }
+    
+    /*
+    */
 
   /**
    * used by dashboards to get annotations
@@ -148,12 +309,6 @@ export default class TslDatasource {
     return this.executeExec({ ws })
       .then((res) => {
         const annotations = []
-        /*if (!) {
-          console.error(`An annotation query must return exactly 1 GTS on top of the stack, annotation: ${ opts.annotation.name }`)
-          var d = this.$q.defer()
-          d.resolve([])
-          return d.promise
-        }*/
 
         for (let gts of GTS.stackFilter(res.data)) {
           let tags = []
@@ -178,7 +333,7 @@ export default class TslDatasource {
         }
         return annotations
       })
-  }store
+  }
 
   /**
    * used by query editor to get metric suggestions and templating.
@@ -225,27 +380,45 @@ export default class TslDatasource {
       endpoint = endpoint.substr(0, endpoint.length - 1);
     }
 
-    let tslQueryRange = ''
-    if ((query.from !== undefined) && (query.to  !== undefined)) {
-      tslQueryRange = query.from + "," + query.to;
-    }
-
     var auth = undefined
     if (this.instanceSettings.basicAuth !== undefined) {
       auth = this.instanceSettings.basicAuth;
     }
 
-    return this.backendSrv.datasourceRequest({
-      method: 'POST',
-      url: endpoint + '/v0/query',
-      data: query.ws,
-      headers: {
-        'Accept': undefined,
-        'Content-Type': undefined,
-        'TSL-Query-Range': tslQueryRange,
-        Authorization: auth,
+    let useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false
+
+    if (useBackend) {
+      let tslBackend = !!this.instanceSettings.jsonData.tslBackend ? this.instanceSettings.jsonData.tslBackend : "warp10"
+      query.target = query.target.map(el => ({   
+        ...el, tslBackend: tslBackend, datasourceId: this.instanceSettings.id,   auth: auth,   tsl: !!el.friendlyQuery.tslScript   ? el.friendlyQuery.tslScript   : el.expr 
+      }))
+      const tsdbRequestData = {
+        from: query.from.valueOf().toString(),
+        to: query.to.valueOf().toString(),
+        queries: query.target,
+      };
+      return this.backendSrv.datasourceRequest({
+        url: '/api/tsdb/query',
+        method: 'POST',
+        data: tsdbRequestData
+      });
+    } else {
+      let tslQueryRange = ''
+      if ((query.from !== undefined) && (query.to  !== undefined)) {
+        tslQueryRange = query.from + "," + query.to;
       }
-    })
+      return this.backendSrv.datasourceRequest({
+        method: 'POST',
+        url: endpoint + '/v0/query',
+        data: query.ws,
+        headers: {
+          'Accept': undefined,
+          'Content-Type': undefined,
+          'TSL-Query-Range': tslQueryRange,
+          Authorization: auth,
+        }
+      });
+    }
   }
 
   /**
@@ -255,8 +428,8 @@ export default class TslDatasource {
   private computeGrafanaContext(): string {
     let wsHeader = ''
     // Datasource vars
-    for (let myVar in this.instanceSettings.jsonData) {
-      let value = this.instanceSettings.jsonData[myVar]
+    for (let myVar in this.instanceSettings.jsonData.var) {
+      let value = this.instanceSettings.jsonData.var[myVar]
       if (typeof value === 'string')
         value = value.replace(/'/g, '"')
       if (typeof value === 'string' && !value.startsWith('<%') && !value.endsWith('%>'))

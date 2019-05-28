@@ -4,6 +4,8 @@
   "name": "TSL",
   "metrics": true,
   "annotations": true,
+  "executable": "tsl-plugin",
+  "backend": true,
   "info": {
     "description": "TSL platform datasource plugin",
     "version": "0.0.1",

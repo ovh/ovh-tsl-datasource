@@ -36,3 +36,9 @@ grafana
 
 # Test artifacts
 /dist/test/
+
+# Ignore go backend plugin
+/dist/tsl-plugin*
+
+# Go vendor
+/vendor

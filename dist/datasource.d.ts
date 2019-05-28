@@ -1,5 +1,5 @@
 export default class TslDatasource {
-    basicAuth: string;
+    basicAuth: boolean;
     withCredentials: boolean;
     id: number;
     orgId: number;

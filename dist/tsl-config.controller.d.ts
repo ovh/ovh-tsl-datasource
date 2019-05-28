@@ -6,6 +6,7 @@ export default class TslConfigCtrl {
     current: Datasource;
     newExtraKey: any;
     newExtraVal: any;
+    tslBackend: string;
     constructor(backendSrv: any, $routeParams: any);
     _loadDatasourceConfig(): void;
     _addExtraVar(): void;

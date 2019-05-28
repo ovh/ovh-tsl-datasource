@@ -1,4 +1,5 @@
-datasource-http-settings(current="ctrl.current" suggest-url="http://localhost:4242")
+datasource-http-settings(current="ctrl.current", suggest-url="http://localhost:4242", access="Browser", basicAuth=False)
+
 h3.page-heading Execution constants
 .grafana-info-box
   p.
@@ -6,10 +7,10 @@ h3.page-heading Execution constants
     Register your consant name and value and
     use your constant directly in your queries/templating.
   p example: &nbsp;
-    code $token
+    code select(name)
 
 .gf-form-group
-  .gf-form(ng-repeat="(key, val) in ctrl.current.jsonData")
+  .gf-form(ng-repeat="(key, val) in ctrl.current.jsonData.var")
     button.btn.btn-danger.full-height(ng-click="ctrl._delExtraVar(key)")
       i.fa.fa-trash(aria-hidden='true')
     a.btn.full-height(ng-click="ctrl._editKey(key)")
@@ -19,6 +20,16 @@ h3.page-heading Execution constants
       i.fa.fa-angle-double-right(aria-hidden='true')
     span.gf-form-label {{ val }}
   // New var
+
+
+h3 TSL Backend
+  gf-form-switch.gf-form(label='Use grafana backend' checked='ctrl.current.jsonData.useBackend')
+  .gf-form(ng-if='ctrl.current.jsonData.useBackend')
+    label.gf-form-label.width-6 Type:
+    select(ng-model='ctrl.current.jsonData.tslBackend').width-10
+      option(value='' selected) warp10
+      option(value='prometheus') prometheus
+
 h6 Add a new constant
 .gf-form
   label.gf-form-label.width-6 Name
