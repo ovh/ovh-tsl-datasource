@@ -84,7 +84,14 @@ A few snippet generating codes were implementing in this Grafana plugin, you wil
 To contribute and re-compile you plugin you can simply execute 
 
 ```sh
+npm install
 npm run build
+```
+
+and to start grafana-tsl
+
+```sh
+npm run start
 ```
 
 # Build TSL grafana backend
