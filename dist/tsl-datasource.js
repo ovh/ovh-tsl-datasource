@@ -78,7 +78,6 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     queries = queries.map(this.executeExec.bind(this));
                     return this.$q.all(queries)
                         .then(function (responses) {
-                        console.log(responses);
                         // Grafana formated GTS
                         var data = [];
                         responses.forEach(function (res, i) {
