@@ -1,6 +1,6 @@
 {
   "name": "grafana-tsl",
-  "version": "2.1.2",
+  "version": "1.0.0",
   "description": "TSL datasource Grafana plugin",
   "main": "module.ts",
   "repository": "git@github.com:ovh/grafana-tsl.git",
