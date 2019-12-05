@@ -1,6 +1,9 @@
 declare var ace
 
 export default function() {
+  if (!window['ace']) {
+    return
+  }
 
   ace.define('ace/mode/tsl_keywords', function(require, exports, module) {
 
@@ -149,4 +152,6 @@ export default function() {
       content:  "select('${1}')\n.where('${2}=${3}')\n.sampleBy(${4:1m}, ${5:mean})\n.groupBy('${6}',${7:mean})"
     }]
   })
+
+  return true
 }

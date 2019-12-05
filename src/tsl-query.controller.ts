@@ -5,7 +5,12 @@ import Query from './query'
 import initTslAceMode from './ace-mode-tsl'
 import SeriesLabels from './seriesLabels';
 
-initTslAceMode()
+function initAce () {
+  if (! initTslAceMode()) {
+    setTimeout(initAce, 500);
+  }
+}
+initAce()
 
 export default class TslQueryCtrl extends QueryCtrl {
 

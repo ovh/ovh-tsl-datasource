@@ -2,6 +2,9 @@ System.register([], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     function default_1() {
+        if (!window['ace']) {
+            return;
+        }
         ace.define('ace/mode/tsl_keywords', function (require, exports, module) {
             var tslFunctions = "select|where|sampleBy|groupBy|rate|from|last|group|window|cumulative|add|sub|mul|div|abs|ceil|floor|round|ln|log2|log10|logN|rate|sqrt|equal|notEqual|greaterThan|greaterOrEqual|lessThan|lessOrEqual|maxWith|minWith|shift|day|weekday|hour|minute|month|year|timestamp|sort|sortDesc|sortBy|sortDescBy|topN|bottomN|topNBy|bottomNBy|on|ignoring|connect|addNamePrefix|addNameSuffix|rename|renameBy|removeLabels|renameLabelKey|renameLabelValue";
             var tslControl = "last|first|mean|max|min|join|median|count|and|or|sum|delta|stddev|stdvar";
@@ -136,6 +139,7 @@ System.register([], function (exports_1, context_1) {
                     content: "select('${1}')\n.where('${2}=${3}')\n.sampleBy(${4:1m}, ${5:mean})\n.groupBy('${6}',${7:mean})"
                 }];
         });
+        return true;
     }
     exports_1("default", default_1);
     return {

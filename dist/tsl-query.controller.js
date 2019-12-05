@@ -16,6 +16,11 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels
     })();
     var sdk_1, query_1, ace_mode_tsl_1, seriesLabels_1, TslQueryCtrl;
     var __moduleName = context_1 && context_1.id;
+    function initAce() {
+        if (!ace_mode_tsl_1.default()) {
+            setTimeout(initAce, 500);
+        }
+    }
     return {
         setters: [
             function (sdk_1_1) {
@@ -32,7 +37,7 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels
             }
         ],
         execute: function () {///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
-            ace_mode_tsl_1.default();
+            initAce();
             TslQueryCtrl = /** @class */ (function (_super) {
                 __extends(TslQueryCtrl, _super);
                 function TslQueryCtrl($scope, uiSegmentSrv, $injector) {
