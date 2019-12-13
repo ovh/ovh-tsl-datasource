@@ -10,40 +10,30 @@ export default class TslConfigCtrl {
   newExtraVal: any
 
   constructor(private backendSrv: any, private $routeParams: any) {
-    this.current = new Datasource()
-    this.current.id = this.$routeParams.id
-    if (this.current.id)
-      this._loadDatasourceConfig()
-    
-    if (!this.current.jsonData.var) {
-      this.current.jsonData.var = {}
-    } 
-  }
+    console.debug('[Tsl] ConfigController', this)
 
-  _loadDatasourceConfig() {
-    this.backendSrv.get('/api/datasources/' + this.current.id)
-    .then((ds: any) => {
-      Object.assign(this.current, ds)
-    })
+    if (!this.current.secureJsonData) {
+      this.current.secureJsonData = {}
+    }
+    if (!this.current.secureJsonFields) {
+      this.current.secureJsonFields = {}
+    }
   }
 
   _addExtraVar() {
-    if (!this.current.jsonData.var) {
-      this.current.jsonData.var = {}
-    }
     if (this.newExtraKey && this.newExtraVal) {
-      this.current.jsonData.var[this.newExtraKey] = this.newExtraVal
+      this.current.jsonData[this.newExtraKey] = this.newExtraVal
       this.newExtraKey = ''
       this.newExtraVal = ''
     }
   }
 
   _delExtraVar(key) {
-    delete this.current.jsonData.var[key]
+    delete this.current.jsonData[key]
   }
 
   _editKey(key) {
     this.newExtraKey = key
-    this.newExtraVal = this.current.jsonData.var[key]
+    this.newExtraVal = this.current.jsonData[key]
   }
 }

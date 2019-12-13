@@ -1,8 +1,8 @@
 export default class TslDatasource {
-    basicAuth: boolean;
-    withCredentials: boolean;
     id: number;
     orgId: number;
+    basicAuth: boolean;
+    withCredentials: boolean;
     isDefault: boolean;
     name: string;
     type: string;
@@ -13,5 +13,6 @@ export default class TslDatasource {
     typeLogoUrl: string;
     database: string;
     jsonData: any;
+    secureJsonData: any;
     secureJsonFields: {};
 }

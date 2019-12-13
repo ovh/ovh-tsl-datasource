@@ -1,8 +1,9 @@
 export default class TslDatasource {
-  basicAuth: boolean = false
-  withCredentials: boolean = false
   id: number = null
   orgId: number = null
+  basicAuth: boolean = false
+  withCredentials: boolean = false
+
   isDefault = false
   name = ''
   type = 'grafana-tsl-datasource'
@@ -20,6 +21,7 @@ export default class TslDatasource {
 
   database = ''
   jsonData: any = { var: {}, useBackend: false}
+  secureJsonData: any = {}
 
   secureJsonFields = {}
 }
