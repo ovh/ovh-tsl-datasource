@@ -1,11 +1,13 @@
 import AnnotationOptions from './interfaces/annotation-options';
 import QueryOptions from './interfaces/query-options';
+/** @ngInject */
 export default class TslDatasource {
     private instanceSettings;
     private $q;
     private backendSrv;
     private templateSrv;
     private $log;
+    basicAuth: any;
     constructor(instanceSettings: any, $q: any, backendSrv: any, templateSrv: any, $log: any);
     /**
      * used by panels to get data

@@ -187,7 +187,7 @@ System.register(["./seriesLabels"], function (exports_1, context_1) {
                         }
                         return q;
                     },
-                    enumerable: true,
+                    enumerable: false,
                     configurable: true
                 });
                 TslQuery.prototype.loadTSLLabels = function () {

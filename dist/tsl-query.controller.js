@@ -1,5 +1,5 @@
 ///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
-System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels"], function (exports_1, context_1) {
+System.register(["app/plugins/sdk", "./ace-mode-tsl", "./query", "./seriesLabels"], function (exports_1, context_1) {
     "use strict";
     var __extends = (this && this.__extends) || (function () {
         var extendStatics = function (d, b) {
@@ -14,7 +14,7 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels
             d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
         };
     })();
-    var sdk_1, query_1, ace_mode_tsl_1, seriesLabels_1, TslQueryCtrl;
+    var sdk_1, ace_mode_tsl_1, query_1, seriesLabels_1, TslQueryCtrl;
     var __moduleName = context_1 && context_1.id;
     function initAce() {
         if (!ace_mode_tsl_1.default()) {
@@ -26,11 +26,11 @@ System.register(["app/plugins/sdk", "./query", "./ace-mode-tsl", "./seriesLabels
             function (sdk_1_1) {
                 sdk_1 = sdk_1_1;
             },
-            function (query_1_1) {
-                query_1 = query_1_1;
-            },
             function (ace_mode_tsl_1_1) {
                 ace_mode_tsl_1 = ace_mode_tsl_1_1;
+            },
+            function (query_1_1) {
+                query_1 = query_1_1;
             },
             function (seriesLabels_1_1) {
                 seriesLabels_1 = seriesLabels_1_1;

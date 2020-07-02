@@ -43,7 +43,7 @@ export default class TslQuery {
     addGroupByLabel(key: string): void;
     delGroupByLabel(key: string): void;
     private static formatStringVar;
-    readonly tslScript: string;
+    get tslScript(): string;
     loadTSLLabels(): string;
     addOperator(operator: string, extraParams: string[]): void;
     delOperator(index: number): void;

@@ -1,19 +1,21 @@
-import AnnotationOptions from './interfaces/annotation-options'
-import GTS from './gts'
-import { Table } from './table'
 import { isGeoJson } from './geo'
-import Query from './query'
+import GTS from './gts'
+import AnnotationOptions from './interfaces/annotation-options'
 import QueryOptions from './interfaces/query-options'
-import { String } from 'es6-shim';
+import Query from './query'
+import { Table } from './table'
 
-
+/** @ngInject */
 export default class TslDatasource {
+  basicAuth: any;
 
   constructor(private instanceSettings: any,
     private $q: any,
     private backendSrv: any,
     private templateSrv: any,
-    private $log: any) {}
+    private $log: any) {
+    this.basicAuth = instanceSettings.basicAuth;
+  }
 
   /**
    * used by panels to get data
@@ -24,7 +26,7 @@ export default class TslDatasource {
     let queries = []
 
     let wsHeader = this.computeTimeVars(opts) + this.computeGrafanaContext() + this.computePanelRepeatVars(opts)
- 
+
     let query = Object.assign({}, opts.targets) // Deep copy
     if (!query.hide) {
 
@@ -35,8 +37,8 @@ export default class TslDatasource {
       query.ws = `${wsHeader}\n`
 
       query.target.forEach(element => {
-      if (element.friendlyQuery)
-        element.friendlyQuery = Object.assign(new Query(), element.friendlyQuery)
+        if (element.friendlyQuery)
+          element.friendlyQuery = Object.assign(new Query(), element.friendlyQuery)
 
         // Grafana can send empty Object at the first time, we need to check if there is something
         if (element.expr || element.friendlyQuery) {
@@ -51,7 +53,7 @@ export default class TslDatasource {
         }
       })
 
-      console.debug('New Query: ', query) 
+      console.debug('New Query: ', query)
       queries.push(query)
     }
 
@@ -96,12 +98,12 @@ export default class TslDatasource {
             keys.map(key => {
               if (res.data.results[key].series) {
                 res.data.results[key].series.forEach(s => {
-                  data.push({target: s.name + this.nameWithTags(s), datapoints: s.points})
+                  data.push({ target: s.name + this.nameWithTags(s), datapoints: s.points })
                 })
               }
               if (res.data.results[key].tables) {
                 res.data.results[key].tables.forEach(s => {
-                  data.push({target: s.name, datapoints: s.points})
+                  data.push({ target: s.name, datapoints: s.points })
                 })
               }
             })
@@ -148,9 +150,9 @@ export default class TslDatasource {
         if (key == ".app") {
           continue
         }
-          labelsValues.push(`${ key }=${ tags.l[key] }`)
+        labelsValues.push(`${key}=${tags.l[key]}`)
       }
-      labelsString = `{${ labelsValues.join(',') }}`
+      labelsString = `{${labelsValues.join(',')}}`
     }
 
     let attributeString = ""
@@ -158,9 +160,9 @@ export default class TslDatasource {
       tags.a = JSON.parse(tags.a)
       let attributesValues = []
       for (let key in tags.a) {
-          attributesValues.push(`${ key }=${ tags.a[key] }`)
+        attributesValues.push(`${key}=${tags.a[key]}`)
       }
-      attributeString = `{${ attributesValues.join(',') }}`
+      attributeString = `{${attributesValues.join(',')}}`
     }
     return `${labelsString}${attributeString}`
   }
@@ -180,22 +182,22 @@ export default class TslDatasource {
   }
 
   promNativeRequest(url, data, requestId) {
-    let options = {   
+    let options = {
       requestId: requestId, url: this.instanceSettings.url + url, method: "GET", withCredentials: false, headers: {}
     }
 
     if (options.method === 'GET') {
-        options.url =
-          options.url +
-          '?'
+      options.url =
+        options.url +
+        '?'
 
-        let query = []
-        for (let k in data) {
-          let v = data[k]
-          query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
-        }
+      let query = []
+      for (let k in data) {
+        let v = data[k]
+        query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
+      }
 
-        options.url = options.url + query.join('&')
+      options.url = options.url + query.join('&')
     }
 
     if (this.instanceSettings.basicAuth || this.instanceSettings.withCredentials) {
@@ -226,7 +228,7 @@ export default class TslDatasource {
     return this.doRequest({
       url: this.instanceSettings.url + '/api/v0/exec',
       method: 'POST',
-      data:"NEWGTS 'test' RENAME"
+      data: "NEWGTS 'test' RENAME"
     }).then(res => {
       if (res.data.length !== 1) {
         return {
@@ -242,14 +244,14 @@ export default class TslDatasource {
         }
       }
     })
-    .catch((res) => {
-      console.log('Error', res)
-      return {
-        status: 'error',
-        message: `Status code: ${res.status}`,
-        title: 'Failed to contact tsl platform'
-      }
-    })
+      .catch((res) => {
+        console.log('Error', res)
+        return {
+          status: 'error',
+          message: `Status code: ${res.status}`,
+          title: 'Failed to contact tsl platform'
+        }
+      })
   }
 
   /**
@@ -266,44 +268,44 @@ export default class TslDatasource {
         return this.prometheusRequest()
       }
     } else {
-      return this.executeExec({ 
+      return this.executeExec({
         ws: 'create(series("test"))'
       })
-      .then(res => {
-        if (res.data.length !== 1) {
+        .then(res => {
+          if (res.data.length !== 1) {
+            return {
+              status: 'error',
+              message: JSON.parse(res.data) || res.data,
+              title: 'Failed to execute basic tsl'
+            }
+          } else {
+            return {
+              status: 'success',
+              message: 'Datasource is working',
+              title: 'Success'
+            }
+          }
+        })
+        .catch((res) => {
+          console.log('Error', res)
           return {
             status: 'error',
-            message: JSON.parse(res.data) || res.data,
-            title: 'Failed to execute basic tsl'
+            message: `Status code: ${res.status}`,
+            title: 'Failed to contact tsl platform'
           }
-        } else {
-          return {
-            status: 'success',
-            message: 'Datasource is working',
-            title: 'Success'
-          }
-        }
-      })
-      .catch((res) => {
-        console.log('Error', res)
-        return {
-          status: 'error',
-          message: `Status code: ${res.status}`,
-          title: 'Failed to contact tsl platform'
-        }
-      })
+        })
     }
   }
-    
-    /*
-    */
+
+  /*
+  */
 
   /**
    * used by dashboards to get annotations
    * @param options
    * @return {Promise<any>} results
    */
-  annotationQuery(opts: AnnotationOptions): Promise<any>{
+  annotationQuery(opts: AnnotationOptions): Promise<any> {
     let ws = this.computeTimeVars(opts) + this.computeGrafanaContext() + opts.annotation.query
 
     return this.executeExec({ ws })
@@ -370,7 +372,6 @@ export default class TslDatasource {
    * @return {Promise<any>} Response
    */
   private executeExec(query: any): Promise<any> {
-
     let endpoint = this.instanceSettings.url
     if ((query.backend !== undefined) && (query.backend.length > 0)) {
       endpoint = query.backend;
@@ -383,14 +384,16 @@ export default class TslDatasource {
     var auth = undefined
     if (this.instanceSettings.basicAuth !== undefined) {
       auth = this.instanceSettings.basicAuth;
+    } else if (this.instanceSettings.jsonData.password !== undefined) {
+      auth = "Basic " + btoa("m:" + this.instanceSettings.jsonData.password);
     }
 
     let useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false
 
     if (useBackend) {
       let tslBackend = !!this.instanceSettings.jsonData.tslBackend ? this.instanceSettings.jsonData.tslBackend : "warp10"
-      query.target = query.target.map(el => ({   
-        ...el, tslBackend: tslBackend, datasourceId: this.instanceSettings.id,   auth: auth,   tsl: !!el.friendlyQuery.tslScript   ? el.friendlyQuery.tslScript   : el.expr 
+      query.target = query.target.map(el => ({
+        ...el, tslBackend: tslBackend, datasourceId: this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr
       }))
       const tsdbRequestData = {
         from: query.from.valueOf().toString(),
@@ -404,7 +407,7 @@ export default class TslDatasource {
       });
     } else {
       let tslQueryRange = ''
-      if ((query.from !== undefined) && (query.to  !== undefined)) {
+      if ((query.from !== undefined) && (query.to !== undefined)) {
         tslQueryRange = query.from + "," + query.to;
       }
       return this.backendSrv.datasourceRequest({
@@ -434,7 +437,7 @@ export default class TslDatasource {
         value = value.replace(/'/g, '"')
       if (typeof value === 'string' && !value.startsWith('<%') && !value.endsWith('%>'))
         value = `'${value}'`
-        wsHeader += ` ${myVar}=${value || 'NULL'} `
+      wsHeader += ` ${myVar}=${value || 'NULL'} `
     }
     // Dashboad templating vars
     for (let myVar of this.templateSrv.variables) {
@@ -445,7 +448,7 @@ export default class TslDatasource {
 
       if (isNaN(value) || value.startsWith('0'))
         value = `'${value}'`
-        wsHeader += ` ${myVar.name}=${value || 'NULL'} `
+      wsHeader += ` ${myVar.name}=${value || 'NULL'} `
     }
     return wsHeader
   }

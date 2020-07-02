@@ -1,4 +1,4 @@
-System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, context_1) {
+System.register(["./geo", "./gts", "./query", "./table"], function (exports_1, context_1) {
     "use strict";
     var __assign = (this && this.__assign) || function () {
         __assign = Object.assign || function(t) {
@@ -11,24 +11,25 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
         };
         return __assign.apply(this, arguments);
     };
-    var gts_1, table_1, geo_1, query_1, TslDatasource;
+    var geo_1, gts_1, query_1, table_1, TslDatasource;
     var __moduleName = context_1 && context_1.id;
     return {
         setters: [
-            function (gts_1_1) {
-                gts_1 = gts_1_1;
-            },
-            function (table_1_1) {
-                table_1 = table_1_1;
-            },
             function (geo_1_1) {
                 geo_1 = geo_1_1;
             },
+            function (gts_1_1) {
+                gts_1 = gts_1_1;
+            },
             function (query_1_1) {
                 query_1 = query_1_1;
+            },
+            function (table_1_1) {
+                table_1 = table_1_1;
             }
         ],
         execute: function () {
+            /** @ngInject */
             TslDatasource = /** @class */ (function () {
                 function TslDatasource(instanceSettings, $q, backendSrv, templateSrv, $log) {
                     this.instanceSettings = instanceSettings;
@@ -36,6 +37,7 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     this.backendSrv = backendSrv;
                     this.templateSrv = templateSrv;
                     this.$log = $log;
+                    this.basicAuth = instanceSettings.basicAuth;
                 }
                 /**
                  * used by panels to get data
@@ -374,10 +376,13 @@ System.register(["./gts", "./table", "./geo", "./query"], function (exports_1, c
                     if (this.instanceSettings.basicAuth !== undefined) {
                         auth = this.instanceSettings.basicAuth;
                     }
+                    else if (this.instanceSettings.jsonData.password !== undefined) {
+                        auth = "Basic " + btoa("m:" + this.instanceSettings.jsonData.password);
+                    }
                     var useBackend = !!this.instanceSettings.jsonData.useBackend ? this.instanceSettings.jsonData.useBackend : false;
                     if (useBackend) {
                         var tslBackend_1 = !!this.instanceSettings.jsonData.tslBackend ? this.instanceSettings.jsonData.tslBackend : "warp10";
-                        query.target = query.target.map(function (el) { return (__assign({}, el, { tslBackend: tslBackend_1, datasourceId: _this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr })); });
+                        query.target = query.target.map(function (el) { return (__assign(__assign({}, el), { tslBackend: tslBackend_1, datasourceId: _this.instanceSettings.id, auth: auth, tsl: !!el.friendlyQuery.tslScript ? el.friendlyQuery.tslScript : el.expr })); });
                         var tsdbRequestData = {
                             from: query.from.valueOf().toString(),
                             to: query.to.valueOf().toString(),
