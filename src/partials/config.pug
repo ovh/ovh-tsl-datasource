@@ -1,4 +1,14 @@
-datasource-http-settings(current="ctrl.current", suggest-url="http://localhost:4242", access="Browser", basicAuth=False)
+datasource-http-settings(current="ctrl.current", suggest-url="http://localhost:4242", access="Browser")
+
+h3.page-heading TSL read token
+.gf-form-group
+  .gf-form-inline
+    secret-form-field(isConfigured="ctrl.current.jsonData.password || ctrl.current.secureJsonFields.password"
+          value="ctrl.current.jsonData.password || ''"
+          on-reset="ctrl.onPasswordReset"
+          on-change="ctrl.onPasswordChange"
+          content="Token"
+          inputWidth="9")
 
 h3.page-heading Execution constants
 .grafana-info-box

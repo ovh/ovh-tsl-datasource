@@ -1,11 +1,11 @@
-System.register(["./datasource"], function (exports_1, context_1) {
+System.register(["./passwordHandlers"], function (exports_1, context_1) {
     "use strict";
-    var datasource_1, TslConfigCtrl;
+    var passwordHandlers_1, TslConfigCtrl;
     var __moduleName = context_1 && context_1.id;
     return {
         setters: [
-            function (datasource_1_1) {
-                datasource_1 = datasource_1_1;
+            function (passwordHandlers_1_1) {
+                passwordHandlers_1 = passwordHandlers_1_1;
             }
         ],
         execute: function () {
@@ -13,12 +13,20 @@ System.register(["./datasource"], function (exports_1, context_1) {
                 function TslConfigCtrl(backendSrv, $routeParams) {
                     this.backendSrv = backendSrv;
                     this.$routeParams = $routeParams;
-                    this.current = new datasource_1.default();
-                    this.current.id = this.$routeParams.id;
-                    if (this.current.id)
+                    console.debug('[TSL] ConfigController', this);
+                    this.onPasswordReset = passwordHandlers_1.createResetHandler(this, passwordHandlers_1.PasswordFieldEnum.Password);
+                    this.onPasswordChange = passwordHandlers_1.createChangeHandler(this, passwordHandlers_1.PasswordFieldEnum.Password);
+                    if (this.current.id) {
                         this._loadDatasourceConfig();
+                    }
                     if (!this.current.jsonData.var) {
                         this.current.jsonData.var = {};
+                    }
+                    if (!this.current.secureJsonFields) {
+                        this.current.secureJsonFields = {};
+                    }
+                    if (!this.current.secureJsonData) {
+                        this.current.secureJsonData = {};
                     }
                 }
                 TslConfigCtrl.prototype._loadDatasourceConfig = function () {

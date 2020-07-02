@@ -1,12 +1,12 @@
 ///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
 
-import { QueryCtrl }   from 'app/plugins/sdk'
-import Query from './query'
-import initTslAceMode from './ace-mode-tsl'
+import { QueryCtrl } from 'app/plugins/sdk';
+import initTslAceMode from './ace-mode-tsl';
+import Query from './query';
 import SeriesLabels from './seriesLabels';
 
-function initAce () {
-  if (! initTslAceMode()) {
+function initAce() {
+  if (!initTslAceMode()) {
     setTimeout(initAce, 500);
   }
 }
@@ -129,9 +129,9 @@ export default class TslQueryCtrl extends QueryCtrl {
     if (!this.extraArithmeticOperator) return
 
     let operator = this.extraArithmeticOperator
-    if (["mul", "add", "sub", "div", "logN"].indexOf(operator) > -1 ) {
+    if (["mul", "add", "sub", "div", "logN"].indexOf(operator) > -1) {
       if (!this.extraArithmeticParam) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraArithmeticParam.toString() ])
+      this.target.friendlyQuery.addOperator(operator, [this.extraArithmeticParam.toString()])
     } else {
       this.target.friendlyQuery.addOperator(operator, [])
     }
@@ -143,8 +143,8 @@ export default class TslQueryCtrl extends QueryCtrl {
   _addEqualityOperator() {
 
     if (!this.extraEqualityOperator || !this.extraEqualityParam) return
-    
-    this.target.friendlyQuery.addOperator(this.extraEqualityOperator, [ this.extraEqualityParam.toString() ])
+
+    this.target.friendlyQuery.addOperator(this.extraEqualityOperator, [this.extraEqualityParam.toString()])
 
     this.extraEqualityOperator = ''
     this.extraEqualityParam = null
@@ -153,8 +153,8 @@ export default class TslQueryCtrl extends QueryCtrl {
   _addLimitOperator() {
 
     if (!this.extraLimitOperator || !this.extraLimitParam) return
-    
-    this.target.friendlyQuery.addOperator(this.extraLimitOperator, [ this.extraLimitParam.toString() ])
+
+    this.target.friendlyQuery.addOperator(this.extraLimitOperator, [this.extraLimitParam.toString()])
 
     this.extraLimitOperator = ''
     this.extraLimitParam = null
@@ -165,26 +165,26 @@ export default class TslQueryCtrl extends QueryCtrl {
     if (!this.extraTimeOperator) return
 
     let operator = this.extraTimeOperator
-    if (["shift"].indexOf(operator) > -1 ) {
+    if (["shift"].indexOf(operator) > -1) {
       if (!this.extraTimeParamDuration) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraTimeParamDuration ])
-    } else if (["keepLastValues", "keepFirstValues", "shrink", "timescale"].indexOf(operator) > -1 ) {
+      this.target.friendlyQuery.addOperator(operator, [this.extraTimeParamDuration])
+    } else if (["keepLastValues", "keepFirstValues", "shrink", "timescale"].indexOf(operator) > -1) {
       if (!this.extraTimeParamNumber) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraTimeParamNumber.toString() ])
-    } else if (["timemodulo"].indexOf(operator) > -1 ) {
+      this.target.friendlyQuery.addOperator(operator, [this.extraTimeParamNumber.toString()])
+    } else if (["timemodulo"].indexOf(operator) > -1) {
       if (!this.extraTimeParamDuration || !this.extraTimeParamNumber) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraTimeParamNumber.toString(), "'" + this.extraTimeParamDuration + "'" ])
-    } else if (["timeclip"].indexOf(operator) > -1 ) {
+      this.target.friendlyQuery.addOperator(operator, [this.extraTimeParamNumber.toString(), "'" + this.extraTimeParamDuration + "'"])
+    } else if (["timeclip"].indexOf(operator) > -1) {
       if (!this.extraTimeParamEnd || !this.extraTimeParamDuration) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraTimeParamEnd, this.extraTimeParamDuration ])
-    } else if (["timesplit"].indexOf(operator) > -1 ) {
+      this.target.friendlyQuery.addOperator(operator, [this.extraTimeParamEnd, this.extraTimeParamDuration])
+    } else if (["timesplit"].indexOf(operator) > -1) {
       if (!this.extraTimeParamDuration || !this.extraTimeParamNumber) return
-      this.target.friendlyQuery.addOperator(operator, [ this.extraTimeParamEnd, this.extraTimeParamNumber.toString(), "'" + this.extraTimeParamDuration + "'" ])
+      this.target.friendlyQuery.addOperator(operator, [this.extraTimeParamEnd, this.extraTimeParamNumber.toString(), "'" + this.extraTimeParamDuration + "'"])
     } else {
       this.target.friendlyQuery.addOperator(operator, [])
     }
 
-    
+
 
     this.extraTimeOperator = ''
     this.extraTimeParamNumber = null
@@ -198,8 +198,8 @@ export default class TslQueryCtrl extends QueryCtrl {
 
     let operator = this.extraWindowOperator
 
-    let params = [ this.extraWindowAggregator ]
-    if (["window"].indexOf(operator) > -1 ) {
+    let params = [this.extraWindowAggregator]
+    if (["window"].indexOf(operator) > -1) {
       if (this.extraWindowAggregator === "percentile") {
         if (!this.extraWindowParamPercentile) return
         params.push(this.extraWindowParamPercentile.toString())
@@ -215,7 +215,7 @@ export default class TslQueryCtrl extends QueryCtrl {
       }
 
       if (this.extraWindowPost) {
-         params.push(this.extraWindowPost)
+        params.push(this.extraWindowPost)
       }
     }
     this.target.friendlyQuery.addOperator(operator, params)
@@ -232,16 +232,16 @@ export default class TslQueryCtrl extends QueryCtrl {
 
     if (!this.extraTransformOperator) return
 
-    if (this.extraTransformOperator === "quantize" ) {
+    if (this.extraTransformOperator === "quantize") {
       if (!this.extraTransformQuantizeLabel || !this.extraTransformQuantizeStep) return
 
-      let params = [ "'" + this.extraTransformQuantizeLabel + "'", this.extraTransformQuantizeStep]
+      let params = ["'" + this.extraTransformQuantizeLabel + "'", this.extraTransformQuantizeStep]
       if (this.extraTransformQuantizeChunk) {
         params.push(this.extraTransformQuantizeChunk)
       }
       this.target.friendlyQuery.addOperator(this.extraTransformOperator, params)
     } else if ((this.extraTransformParam) && (this.extraTransformOperator === "rate")) {
-      this.target.friendlyQuery.addOperator(this.extraTransformOperator, [ this.extraTransformParam.toString() ])
+      this.target.friendlyQuery.addOperator(this.extraTransformOperator, [this.extraTransformParam.toString()])
     } else {
       this.target.friendlyQuery.addOperator(this.extraTransformOperator, [])
     }
@@ -253,16 +253,16 @@ export default class TslQueryCtrl extends QueryCtrl {
   _addSortsOperator() {
 
     if (!this.extraSortsOperator) return
-    
+
     let operator = this.extraSortsOperator
 
     let params = []
-    if (["topN", "bottomN", "topNBy", "bottomNBy"].indexOf(operator) > -1 ) {
+    if (["topN", "bottomN", "topNBy", "bottomNBy"].indexOf(operator) > -1) {
       if (!this.extraSortsParamNumber) return
       params.push(this.extraSortsParamNumber)
     }
 
-    if (["sortBy", "sortDescBy", "topNBy", "bottomNBy"].indexOf(operator) > -1 ) {
+    if (["sortBy", "sortDescBy", "topNBy", "bottomNBy"].indexOf(operator) > -1) {
       if (!this.extraSortsParamAggregator) return
       params.push(this.extraSortsParamAggregator)
 
@@ -282,7 +282,7 @@ export default class TslQueryCtrl extends QueryCtrl {
 
   _addMetaOperator() {
     if (!this.extraMetaOperator) return
-    
+
     if (this.extraMetaOperator != "removeLabels") {
       if (!this.extraMetaParam) return
     }
@@ -308,12 +308,12 @@ export default class TslQueryCtrl extends QueryCtrl {
     if (this.extraMetaOperator === "removeLabels") {
 
       if (!this.extraMetaParamRemoveLabels) return
-      
+
       if (this.extraMetaParamRemoveLabels.length < 1) return
 
       params = []
-      for(let index in this.extraMetaParamRemoveLabels) { 
-        params.push("'" +this.extraMetaParamRemoveLabels[index]+ "'")
+      for (let index in this.extraMetaParamRemoveLabels) {
+        params.push("'" + this.extraMetaParamRemoveLabels[index] + "'")
       }
 
     } else if (this.extraMetaOperator === "renameLabelKey") {
@@ -343,10 +343,10 @@ export default class TslQueryCtrl extends QueryCtrl {
     if (!this.extraMetalabels) return
     if (this.extraMetalabels.length === 0) return
 
-    
+
     let params = []
 
-    for(let index in this.extraMetalabels) { 
+    for (let index in this.extraMetalabels) {
 
       let labelStr = ''
       let comparator = this.extraMetalabels[index].comparator
@@ -393,7 +393,7 @@ export default class TslQueryCtrl extends QueryCtrl {
   _mvOperatorDown(index) {
     this.target.friendlyQuery.mvOperatorDown(index)
   }
-  
+
   _mvOperatorUp(index) {
     this.target.friendlyQuery.mvOperatorUp(index)
   }

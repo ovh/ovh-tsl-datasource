@@ -1,4 +1,9 @@
-import Datasource from './datasource'
+import Datasource from './datasource';
+import {
+  createChangeHandler,
+  createResetHandler,
+  PasswordFieldEnum
+} from './passwordHandlers';
 
 export default class TslConfigCtrl {
 
@@ -9,22 +14,31 @@ export default class TslConfigCtrl {
   newExtraKey: any
   newExtraVal: any
 
+  onPasswordReset: ReturnType<typeof createResetHandler>;
+  onPasswordChange: ReturnType<typeof createChangeHandler>;
+
   constructor(private backendSrv: any, private $routeParams: any) {
-    this.current = new Datasource()
-    this.current.id = this.$routeParams.id
-    if (this.current.id)
+    console.debug('[TSL] ConfigController', this)
+    this.onPasswordReset = createResetHandler(this, PasswordFieldEnum.Password);
+    this.onPasswordChange = createChangeHandler(this, PasswordFieldEnum.Password);
+    if (this.current.id) {
       this._loadDatasourceConfig()
-    
+    }
     if (!this.current.jsonData.var) {
       this.current.jsonData.var = {}
-    } 
+    }
+    if (!this.current.secureJsonFields) {
+      this.current.secureJsonFields = {}
+    } if (!this.current.secureJsonData) {
+      this.current.secureJsonData = {}
+    }
   }
 
   _loadDatasourceConfig() {
     this.backendSrv.get('/api/datasources/' + this.current.id)
-    .then((ds: any) => {
-      Object.assign(this.current, ds)
-    })
+      .then((ds: any) => {
+        Object.assign(this.current, ds)
+      })
   }
 
   _addExtraVar() {
