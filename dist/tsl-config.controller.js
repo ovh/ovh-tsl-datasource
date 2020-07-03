@@ -28,6 +28,9 @@ System.register(["./passwordHandlers"], function (exports_1, context_1) {
                     if (!this.current.secureJsonData) {
                         this.current.secureJsonData = {};
                     }
+                    if (this.current.jsonData[passwordHandlers_1.PasswordFieldEnum.Password] != undefined) {
+                        this.current.secureJsonFields[passwordHandlers_1.PasswordFieldEnum.Password] = true;
+                    }
                 }
                 TslConfigCtrl.prototype._loadDatasourceConfig = function () {
                     var _this = this;

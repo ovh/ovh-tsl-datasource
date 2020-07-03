@@ -28,7 +28,6 @@ System.register([], function (exports_1, context_1) {
             exports_1("createChangeHandler", createChangeHandler = function (ctrl, field) { return function (event) {
                 ctrl.current.jsonData = ctrl.current.jsonData || {};
                 ctrl.current.jsonData[field] = event.currentTarget.value;
-                console.debug(event.currentTarget.value);
             }; });
         }
     };

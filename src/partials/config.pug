@@ -3,7 +3,7 @@ datasource-http-settings(current="ctrl.current", suggest-url="http://localhost:4
 h3.page-heading TSL read token
 .gf-form-group
   .gf-form-inline
-    secret-form-field(isConfigured="ctrl.current.jsonData.password || ctrl.current.secureJsonFields.password"
+    secret-form-field(isConfigured="ctrl.current.secureJsonFields.password"
           value="ctrl.current.jsonData.password || ''"
           on-reset="ctrl.onPasswordReset"
           on-change="ctrl.onPasswordChange"
