@@ -17,7 +17,8 @@ Grafana will use the *dist/* folder by default
 - choose a name
 - set TSL as type
 - paste the TSL platform URL ( do not append /v0/query )
-- use the basic-auth to set your default token for TSL queries
+- with TSL configured to make **server** query set the default token in panel TSL read token
+- with a browser set up you can use the basic-auth to set your default token for TSL queries
 
 ## Add execution variables
 
@@ -43,13 +44,13 @@ select('metric')
 ## Available variables
 On your TSL you can use (all timestamps are in µSeconds):
 
-| Name          | Description                                                   | Example                    |
-|---------------|---------------------------------------------------------------|----------------------------|
-| **end**      | Timestamp of the most recent point in the Grafana time window  | 1498038153276000           |
-| **endISO**   | *end* value in ISO-8601 format                                 | '2017-06-21T09:42:33.276Z' |
-| **start**    | Timestamp of the less recent point in the Grafana time window  | 1498034553276000           |
-| **startISO** | *start* value in ISO-8601 format                               | '2017-06-21T08:42:33.276Z' |
-| **interval** | Difference between *end* and *start*                           | 3600000000                 |
+| Name         | Description                                                   | Example                    |
+| ------------ | ------------------------------------------------------------- | -------------------------- |
+| **end**      | Timestamp of the most recent point in the Grafana time window | 1498038153276000           |
+| **endISO**   | *end* value in ISO-8601 format                                | '2017-06-21T09:42:33.276Z' |
+| **start**    | Timestamp of the less recent point in the Grafana time window | 1498034553276000           |
+| **startISO** | *start* value in ISO-8601 format                              | '2017-06-21T08:42:33.276Z' |
+| **interval** | Difference between *end* and *start*                          | 3600000000                 |
 
 
 # Templating variable evaluation

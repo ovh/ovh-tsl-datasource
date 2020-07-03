@@ -36,5 +36,4 @@ export const createChangeHandler = (ctrl: any, field: PasswordFieldEnum) => (
 ) => {
     ctrl.current.jsonData = ctrl.current.jsonData || {};
     ctrl.current.jsonData[field] = event.currentTarget.value;
-    console.debug(event.currentTarget.value)
 };

@@ -32,6 +32,9 @@ export default class TslConfigCtrl {
     } if (!this.current.secureJsonData) {
       this.current.secureJsonData = {}
     }
+    if (this.current.jsonData[PasswordFieldEnum.Password] != undefined) {
+      this.current.secureJsonFields[PasswordFieldEnum.Password] = true
+    }
   }
 
   _loadDatasourceConfig() {
